@@ -387,7 +387,7 @@ app.get('/', (req, res) => {
         } else {
           const finalWidth = adjustedWidth * 54 / 22;
           numberOfPanels = parseFloat((adjustedWidth / panelWidth).toFixed(4));
-          clothRequiredMeters = Math.ceil(finalWidth) * (2.54 / 100);
+          clothRequiredMeters = (finalWidth) * (2.54 / 100);
         }
 
         const totalCost = parseFloat((clothRequiredMeters * parseFloat(pricePerMeter)).toFixed(2));
@@ -704,4 +704,5 @@ async function startServer() {
 startServer();
 
 module.exports = app;
+
 
