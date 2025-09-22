@@ -383,7 +383,7 @@ app.get('/', (req, res) => {
 
         if (mode === 'single') {
           numberOfPanels = Math.ceil(adjustedWidth / panelWidth);
-          clothRequiredMeters = Math.ceil(Math.ceil((numberOfPanels * (parseFloat(height) + 10) + 10)) * (2.54 / 100));
+          clothRequiredMeters = Math.ceil((numberOfPanels * (parseFloat(height) + 10) + 10)) * (2.54 / 100);
         } else {
           const finalWidth = adjustedWidth * 54 / 22;
           numberOfPanels = parseFloat((adjustedWidth / panelWidth).toFixed(4));
@@ -704,3 +704,4 @@ async function startServer() {
 startServer();
 
 module.exports = app;
+
