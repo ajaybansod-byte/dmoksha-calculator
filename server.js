@@ -385,7 +385,7 @@ app.get('/', (req, res) => {
           numberOfPanels = Math.ceil(adjustedWidth / panelWidth);
           clothRequiredMeters = Math.ceil((numberOfPanels * (parseFloat(height) + 10) + 10)) * (2.54 / 100);
         } else {
-          const finalWidth = adjustedWidth * 54 / 22;
+          const finalWidth = adjustedWidth * 54 / panelWidth;
            numberOfPanels = Math.ceil((adjustedWidth / panelWidth));
           clothRequiredMeters = (finalWidth) * (2.54 / 100);
         }
@@ -704,6 +704,7 @@ async function startServer() {
 startServer();
 
 module.exports = app;
+
 
 
 
