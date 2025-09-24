@@ -442,7 +442,7 @@ app.get('/', (req, res) => {
                 <span className="text-2xl font-bold text-black">D'M</span>
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">D'Moksha</h1>
-              <p className="text-amber-400 text-sm font-medium tracking-wide">LUXURY CURTAINS - WORKING VERSION</p>
+              <p className="text-amber-400 text-sm font-medium tracking-wide">Premium CURTAINS - WORKING VERSION</p>
               <div className="w-20 h-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 mx-auto mt-2"></div>
             </div>
 
@@ -704,6 +704,7 @@ async function startServer() {
 startServer();
 
 module.exports = app;
+
 
 
 
