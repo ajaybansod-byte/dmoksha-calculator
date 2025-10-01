@@ -62,9 +62,12 @@ const SHEET_HEADERS = [
   'Width (inches)',
   'Height (inches)',
   'Panel Width (inches)',
+  'Stitch Style',
+  'Stitch Style Cost (₹)',
   'Price per Meter (₹)',
   'Number of Panels',
   'Cloth Required (meters)',
+  'Stitching Cost (₹)',
   'Total Cost (₹)',
   'User IP',
   'Browser Info'
@@ -137,9 +140,12 @@ async function appendToGoogleSheet(data) {
       'Width (inches)': parseFloat(data.width || 0),
       'Height (inches)': parseFloat(data.height || 0),
       'Panel Width (inches)': parseInt(data.panelWidth || 0),
+      'Stitch Style': data.stitchStyle || 'Plain',
+      'Stitch Style Cost (₹)': parseFloat(data.stitchStyleCost || 0),
       'Price per Meter (₹)': parseFloat(data.pricePerMeter || 0),
       'Number of Panels': parseFloat(data.numberOfPanels || 0),
       'Cloth Required (meters)': parseFloat(data.clothMeters || 0),
+      'Stitching Cost (₹)': parseFloat(data.stitchingCost || 0),
       'Total Cost (₹)': parseFloat(data.totalCost || 0),
       'User IP': data.userIp || 'Unknown',
       'Browser Info': data.userAgent ? data.userAgent.substring(0, 100) : 'Unknown'
@@ -194,14 +200,14 @@ app.post('/api/save', async (req, res) => {
     }
 
     const {
-      width, height, panelWidth, pricePerMeter,
-      numberOfPanels, clothMeters, totalCost, mode, timestamp
+      width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
+      numberOfPanels, clothMeters, stitchingCost, totalCost, mode, timestamp
     } = req.body;
 
     // Validate required fields
-    if (!width || !height || !panelWidth || !pricePerMeter || 
+    if (!width || !height || !panelWidth || !stitchStyle || !pricePerMeter || 
         numberOfPanels === undefined || clothMeters === undefined || 
-        totalCost === undefined) {
+        stitchingCost === undefined || totalCost === undefined) {
       return res.status(400).json({
         error: 'Missing required fields',
         received: Object.keys(req.body)
@@ -209,8 +215,8 @@ app.post('/api/save', async (req, res) => {
     }
 
     const dataToSave = {
-      width, height, panelWidth, pricePerMeter,
-      numberOfPanels, clothMeters, totalCost,
+      width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
+      numberOfPanels, clothMeters, stitchingCost, totalCost,
       mode: mode || 'single',
       timestamp: timestamp || new Date().toISOString(),
       userIp: req.ip || 'Unknown',
@@ -272,10 +278,10 @@ app.get('/', (req, res) => {
     const CurtainCalculator = () => {
       const [mode, setMode] = useState('single');
       const [inputs, setInputs] = useState({
-        width: '', height: '', panelWidth: 22, pricePerMeter: ''
+        width: '', height: '', panelWidth: 22, stitchStyle: 'Plain', pricePerMeter: ''
       });
       const [results, setResults] = useState({
-        numberOfPanels: 0, clothMeters: 0, totalCost: 0
+        numberOfPanels: 0, clothMeters: 0, stitchingCost: 0, totalCost: 0
       });
       const [saveStatus, setSaveStatus] = useState('');
       const [isCalculated, setIsCalculated] = useState(false);
@@ -285,6 +291,13 @@ app.get('/', (req, res) => {
         { label: 'High', value: 22 },
         { label: 'Medium', value: 24 },
         { label: 'Low', value: 26 }
+      ];
+
+      const stitchStyleOptions = [
+        { label: 'Plain', value: 'Plain', cost: 200 },
+        { label: 'American Plit', value: 'American Plit', cost: 250 },
+        { label: 'Rod Pocket', value: 'Rod Pocket', cost: 300 },
+        { label: 'Ripple', value: 'Ripple', cost: 350 }
       ];
 
       const handleModeSwitch = (newMode) => {
@@ -322,22 +335,32 @@ app.get('/', (req, res) => {
         return Object.keys(errors).length === 0;
       };
 
+      const getStitchStyleCost = (styleName) => {
+        const style = stitchStyleOptions.find(s => s.value === styleName);
+        return style ? style.cost : 200;
+      };
+
       // Save function that works with the backend
       const saveToGoogleSheets = async (calculationResults, isAutoSave = false) => {
         try {
           setSaveStatus('saving');
+          
+          const stitchStyleCost = getStitchStyleCost(inputs.stitchStyle);
           
           const dataToSave = {
             // Input data
             width: inputs.width,
             height: inputs.height,
             panelWidth: inputs.panelWidth,
+            stitchStyle: inputs.stitchStyle,
+            stitchStyleCost: stitchStyleCost,
             pricePerMeter: inputs.pricePerMeter,
             mode: mode,
             
             // Output data
             numberOfPanels: calculationResults.numberOfPanels,
             clothMeters: calculationResults.clothMeters,
+            stitchingCost: calculationResults.stitchingCost,
             totalCost: calculationResults.totalCost,
             
             // Metadata
@@ -375,7 +398,7 @@ app.get('/', (req, res) => {
       const calculateResults = () => {
         if (!validateInputs()) return;
 
-        const { width, height, panelWidth, pricePerMeter } = inputs;
+        const { width, height, panelWidth, pricePerMeter, stitchStyle } = inputs;
         const extraWidth = (6/50) * parseFloat(width);
         const adjustedWidth = parseFloat(width) + extraWidth;
 
@@ -386,15 +409,25 @@ app.get('/', (req, res) => {
           clothRequiredMeters = Math.ceil((numberOfPanels * (parseFloat(height) + 10) + 10)) * (2.54 / 100);
         } else {
           const finalWidth = adjustedWidth * 54 / panelWidth;
-           numberOfPanels = Math.ceil((adjustedWidth / panelWidth));
+          numberOfPanels = Math.ceil((adjustedWidth / panelWidth));
           clothRequiredMeters = (finalWidth) * (2.54 / 100);
         }
 
-        const totalCost = parseFloat((clothRequiredMeters * parseFloat(pricePerMeter)).toFixed(2));
+        // Round cloth required to 1 decimal place
+        const roundedClothMeters = parseFloat(clothRequiredMeters.toFixed(1));
+        
+        // Calculate stitching cost
+        const stitchStyleCost = getStitchStyleCost(stitchStyle);
+        const stitchingCost = stitchStyleCost * numberOfPanels;
+        
+        // Calculate total cost using rounded cloth meters
+        const fabricCost = roundedClothMeters * parseFloat(pricePerMeter);
+        const totalCost = parseFloat((fabricCost + stitchingCost).toFixed(2));
         
         const calculationResults = {
-          numberOfPanels: mode === 'single' ? numberOfPanels : numberOfPanels,
-          clothMeters: parseFloat(clothRequiredMeters.toFixed(4)),
+          numberOfPanels: numberOfPanels,
+          clothMeters: roundedClothMeters,
+          stitchingCost: stitchingCost,
           totalCost: totalCost
         };
 
@@ -415,8 +448,8 @@ app.get('/', (req, res) => {
       };
 
       const resetForm = () => {
-        setInputs({ width: '', height: '', panelWidth: 22, pricePerMeter: '' });
-        setResults({ numberOfPanels: 0, clothMeters: 0, totalCost: 0 });
+        setInputs({ width: '', height: '', panelWidth: 22, stitchStyle: 'Plain', pricePerMeter: '' });
+        setResults({ numberOfPanels: 0, clothMeters: 0, stitchingCost: 0, totalCost: 0 });
         setIsCalculated(false);
         setSaveStatus('');
         setValidationErrors({});
@@ -536,6 +569,29 @@ app.get('/', (req, res) => {
                   </div>
                 </div>
 
+                {/* Stitch Style Selection */}
+                <div>
+                  <label className="block text-amber-400 text-sm font-medium mb-3">
+                    Stitch Style
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {stitchStyleOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleInputChange('stitchStyle', option.value)}
+                        className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${
+                          inputs.stitchStyle === option.value
+                            ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg'
+                            : 'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'
+                        }\`}
+                      >
+                        <div className="text-xs opacity-80">{option.label}</div>
+                        <div className="font-bold">₹{option.cost}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Price Input */}
                 <div>
                   <label className="block text-amber-400 text-sm font-medium mb-2">Price per Meter (₹) *</label>
@@ -589,9 +645,13 @@ app.get('/', (req, res) => {
                       <span className="text-gray-300 text-sm">Cloth Required:</span>
                       <span className="text-white font-medium">{\`\${results.clothMeters}m\`}</span>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300 text-sm">Stitching Cost:</span>
+                      <span className="text-white font-medium">₹{results.stitchingCost}</span>
+                    </div>
                     <div className="flex justify-between items-center border-t border-gray-600 pt-3">
                       <span className="text-amber-400 font-medium">Total Cost:</span>
-                      <span className="text-amber-400 font-bold text-lg">{\`₹\${results.totalCost}\`}</span>
+                      <span className="text-amber-400 font-bold text-lg">₹{results.totalCost}</span>
                     </div>
                   </div>
 
@@ -691,6 +751,8 @@ async function startServer() {
     console.log('✅ Frontend with working save functions');
     console.log('✅ Auto-save and manual save both working');
     console.log('✅ Complete data saving (inputs + outputs)');
+    console.log('✅ Stitch Style feature added');
+    console.log('✅ Stitching cost calculation');
     console.log('');
     console.log('🧪 TEST STEPS:');
     console.log('1. Go to http://localhost:' + PORT);
@@ -704,13 +766,3 @@ async function startServer() {
 startServer();
 
 module.exports = app;
-
-
-
-
-
-
-
-
-
-
