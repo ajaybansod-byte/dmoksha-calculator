@@ -106,10 +106,9 @@ async function initializeGoogleSheets() {
       console.log('✅ Created new worksheet');
     } else {
       await sheet.loadHeaderRow();
-      if (!sheet.headerValues || sheet.headerValues.length === 0) {
-        await sheet.setHeaderRow(SHEET_HEADERS);
-        console.log('✅ Set headers');
-      }
+      // Force update headers to ensure they match the current structure
+      await sheet.setHeaderRow(SHEET_HEADERS);
+      console.log('✅ Headers updated to latest structure');
     }
 
     connectionStatus = { connected: true, error: null };
