@@ -409,7 +409,7 @@ app.get('/', (req, res) => {
         } else {
           const finalWidth = adjustedWidth * 54 / panelWidth;
           numberOfPanels = Math.ceil((adjustedWidth / panelWidth));
-          clothRequiredMeters = (finalWidth) * (2.54 / 100);
+          clothRequiredMeters = (finalWidth + adjustedWidth) * (2.54 / 100);
         }
 
         // Round cloth required to 1 decimal place
@@ -765,3 +765,4 @@ async function startServer() {
 startServer();
 
 module.exports = app;
+
