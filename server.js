@@ -140,7 +140,7 @@ async function appendToGoogleSheet(data) {
       'Width (inches)': parseFloat(data.width || 0),
       'Height (inches)': parseFloat(data.height || 0),
       'Panel Width (inches)': parseInt(data.panelWidth || 0),
-      'Stitch Style': data.stitchStyle || 'Plain',
+      'Stitch Style': data.stitchStyle || 'Plain Classic',
       'Stitch Style Cost (₹)': parseFloat(data.stitchStyleCost || 0),
       'Price per Meter (₹)': parseFloat(data.pricePerMeter || 0),
       'Number of Panels': parseFloat(data.numberOfPanels || 0),
@@ -280,7 +280,7 @@ app.get('/', (req, res) => {
     const CurtainCalculator = () => {
       const [mode, setMode] = useState('single');
       const [inputs, setInputs] = useState({
-        width: '', height: '', panelWidth: 22, stitchStyle: 'Plain', pricePerMeter: ''
+        width: '', height: '', panelWidth: 22, stitchStyle: 'Plain Classic', pricePerMeter: ''
       });
       const [results, setResults] = useState({
         numberOfPanels: 0, clothMeters: 0, fabricCost: 0, stitchingCost: 0, totalCost: 0
@@ -290,14 +290,14 @@ app.get('/', (req, res) => {
       const [validationErrors, setValidationErrors] = useState({});
 
       const panelOptions = [
-        { label: 'High', value: 22 },
-        { label: 'Medium', value: 24 },
-        { label: 'Low', value: 26 },
+        { label: 'High Gather', value: 22 },
+        { label: 'Medium Gather', value: 24 },
+        { label: 'Low Gather', value: 26 },
         { label: 'Plain Classic', value: 40 }
       ];
 
       const stitchStyleOptions = [
-        { label: 'Plain', value: 'Plain', cost: 200 },
+        { label: 'Plain Classic', value: 'Plain Classic', cost: 200 },
         { label: 'American Pleat', value: 'American Pleat', cost: 250 },
         { label: 'Rod Pocket', value: 'Rod Pocket', cost: 300 },
         { label: 'Ripple', value: 'Ripple', cost: 350 }
@@ -455,7 +455,7 @@ app.get('/', (req, res) => {
       };
 
       const resetForm = () => {
-        setInputs({ width: '', height: '', panelWidth: 22, stitchStyle: 'Plain', pricePerMeter: '' });
+        setInputs({ width: '', height: '', panelWidth: 22, stitchStyle: 'Plain Classic', pricePerMeter: '' });
         setResults({ numberOfPanels: 0, clothMeters: 0, fabricCost: 0, stitchingCost: 0, totalCost: 0 });
         setIsCalculated(false);
         setSaveStatus('');
@@ -554,7 +554,7 @@ app.get('/', (req, res) => {
                 {/* Panel Width Selection */}
                 <div>
                   <label className="block text-amber-400 text-sm font-medium mb-3">
-                    {mode === 'single' ? 'Panel Width' : 'Finished Panel Width'}
+                    Finished Panel Width
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {panelOptions.map((option) => (
