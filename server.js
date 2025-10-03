@@ -67,6 +67,7 @@ const SHEET_HEADERS = [
   'Price per Meter (₹)',
   'Number of Panels',
   'Cloth Required (meters)',
+  'Fabric Cost (₹)',
   'Stitching Cost (₹)',
   'Total Cost (₹)',
   'User IP',
@@ -144,6 +145,7 @@ async function appendToGoogleSheet(data) {
       'Price per Meter (₹)': parseFloat(data.pricePerMeter || 0),
       'Number of Panels': parseFloat(data.numberOfPanels || 0),
       'Cloth Required (meters)': parseFloat(data.clothMeters || 0),
+      'Fabric Cost (₹)': parseFloat(data.fabricCost || 0),
       'Stitching Cost (₹)': parseFloat(data.stitchingCost || 0),
       'Total Cost (₹)': parseFloat(data.totalCost || 0),
       'User IP': data.userIp || 'Unknown',
@@ -200,13 +202,14 @@ app.post('/api/save', async (req, res) => {
 
     const {
       width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
-      numberOfPanels, clothMeters, stitchingCost, totalCost, mode, timestamp
+      numberOfPanels, clothMeters, fabricCost, stitchingCost, totalCost, mode, timestamp
     } = req.body;
 
     // Validate required fields
     if (!width || !height || !panelWidth || !stitchStyle || !pricePerMeter || 
         numberOfPanels === undefined || clothMeters === undefined || 
-        stitchingCost === undefined || totalCost === undefined) {
+        fabricCost === undefined || stitchingCost === undefined || 
+        totalCost === undefined) {
       return res.status(400).json({
         error: 'Missing required fields',
         received: Object.keys(req.body)
@@ -215,7 +218,7 @@ app.post('/api/save', async (req, res) => {
 
     const dataToSave = {
       width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
-      numberOfPanels, clothMeters, stitchingCost, totalCost,
+      numberOfPanels, clothMeters, fabricCost, stitchingCost, totalCost,
       mode: mode || 'single',
       timestamp: timestamp || new Date().toISOString(),
       userIp: req.ip || 'Unknown',
@@ -280,7 +283,7 @@ app.get('/', (req, res) => {
         width: '', height: '', panelWidth: 22, stitchStyle: 'Plain', pricePerMeter: ''
       });
       const [results, setResults] = useState({
-        numberOfPanels: 0, clothMeters: 0, stitchingCost: 0, totalCost: 0
+        numberOfPanels: 0, clothMeters: 0, fabricCost: 0, stitchingCost: 0, totalCost: 0
       });
       const [saveStatus, setSaveStatus] = useState('');
       const [isCalculated, setIsCalculated] = useState(false);
@@ -289,7 +292,8 @@ app.get('/', (req, res) => {
       const panelOptions = [
         { label: 'High', value: 22 },
         { label: 'Medium', value: 24 },
-        { label: 'Low', value: 26 }
+        { label: 'Low', value: 26 },
+        { label: 'Plain Classic', value: 40 }
       ];
 
       const stitchStyleOptions = [
@@ -359,6 +363,7 @@ app.get('/', (req, res) => {
             // Output data
             numberOfPanels: calculationResults.numberOfPanels,
             clothMeters: calculationResults.clothMeters,
+            fabricCost: calculationResults.fabricCost,
             stitchingCost: calculationResults.stitchingCost,
             totalCost: calculationResults.totalCost,
             
@@ -415,17 +420,20 @@ app.get('/', (req, res) => {
         // Round cloth required to 1 decimal place
         const roundedClothMeters = parseFloat(clothRequiredMeters.toFixed(1));
         
+        // Calculate fabric cost
+        const fabricCost = parseFloat((roundedClothMeters * parseFloat(pricePerMeter)).toFixed(2));
+        
         // Calculate stitching cost
         const stitchStyleCost = getStitchStyleCost(stitchStyle);
         const stitchingCost = stitchStyleCost * numberOfPanels;
         
-        // Calculate total cost using rounded cloth meters
-        const fabricCost = roundedClothMeters * parseFloat(pricePerMeter);
+        // Calculate total cost
         const totalCost = parseFloat((fabricCost + stitchingCost).toFixed(2));
         
         const calculationResults = {
           numberOfPanels: numberOfPanels,
           clothMeters: roundedClothMeters,
+          fabricCost: fabricCost,
           stitchingCost: stitchingCost,
           totalCost: totalCost
         };
@@ -448,7 +456,7 @@ app.get('/', (req, res) => {
 
       const resetForm = () => {
         setInputs({ width: '', height: '', panelWidth: 22, stitchStyle: 'Plain', pricePerMeter: '' });
-        setResults({ numberOfPanels: 0, clothMeters: 0, stitchingCost: 0, totalCost: 0 });
+        setResults({ numberOfPanels: 0, clothMeters: 0, fabricCost: 0, stitchingCost: 0, totalCost: 0 });
         setIsCalculated(false);
         setSaveStatus('');
         setValidationErrors({});
@@ -470,9 +478,6 @@ app.get('/', (req, res) => {
           <div className="max-w-md mx-auto">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
-                <span className="text-2xl font-bold text-black">D'M</span>
-              </div>
               <h1 className="text-3xl font-bold text-white mb-2">D'Moksha</h1>
               <p className="text-amber-400 text-sm font-medium tracking-wide">PREMIUM CURTAINS - WORKING VERSION</p>
               <div className="w-20 h-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 mx-auto mt-2"></div>
@@ -550,12 +555,12 @@ app.get('/', (req, res) => {
                   <label className="block text-amber-400 text-sm font-medium mb-3">
                     {mode === 'single' ? 'Panel Width' : 'Panel Gather'}
                   </label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {panelOptions.map((option) => (
                       <button
                         key={option.value}
                         onClick={() => handleInputChange('panelWidth', option.value)}
-                        className={\`flex-1 py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${
+                        className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${
                           inputs.panelWidth === option.value
                             ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg'
                             : 'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'
@@ -643,6 +648,10 @@ app.get('/', (req, res) => {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300 text-sm">Cloth Required:</span>
                       <span className="text-white font-medium">{\`\${results.clothMeters}m\`}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300 text-sm">Fabric Cost:</span>
+                      <span className="text-white font-medium">₹{results.fabricCost}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300 text-sm">Stitching Cost:</span>
@@ -765,5 +774,3 @@ async function startServer() {
 startServer();
 
 module.exports = app;
-
-
