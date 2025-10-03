@@ -298,7 +298,7 @@ app.get('/', (req, res) => {
 
       const stitchStyleOptions = [
         { label: 'Plain', value: 'Plain', cost: 200 },
-        { label: 'American Plit', value: 'American Plit', cost: 250 },
+        { label: 'American Pleat', value: 'American Pleat', cost: 250 },
         { label: 'Rod Pocket', value: 'Rod Pocket', cost: 300 },
         { label: 'Ripple', value: 'Ripple', cost: 350 }
       ];
@@ -479,7 +479,8 @@ app.get('/', (req, res) => {
             {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-white mb-2">D'Moksha</h1>
-              <p className="text-amber-400 text-sm font-medium tracking-wide">PREMIUM CURTAINS - WORKING VERSION</p>
+              <p className="text-amber-400 text-sm font-medium tracking-wide">Express yourself. Choose goodness</p>
+              <p className="text-gray-400 text-xs mt-1">Pricing Calculator</p>
               <div className="w-20 h-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 mx-auto mt-2"></div>
             </div>
 
@@ -553,7 +554,7 @@ app.get('/', (req, res) => {
                 {/* Panel Width Selection */}
                 <div>
                   <label className="block text-amber-400 text-sm font-medium mb-3">
-                    {mode === 'single' ? 'Panel Width' : 'Panel Gather'}
+                    {mode === 'single' ? 'Panel Width' : 'Finished Panel Width'}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {panelOptions.map((option) => (
@@ -676,21 +677,7 @@ app.get('/', (req, res) => {
 
                   {/* Buttons */}
                   <div className="space-y-3 mt-4">
-                    <button
-                      onClick={manualSave}
-                      disabled={saveStatus === 'saving'}
-                      className="w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed transition-all duration-200"
-                    >
-                      {saveStatus === 'saving' ? 'Saving...' : 'Save Again to Google Sheets'}
-                    </button>
-                    
-                    <button
-                      onClick={openGoogleSheet}
-                      className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-blue-700 transition-all duration-200 flex items-center justify-center gap-2"
-                    >
-                      <span>📊</span>
-                      View Google Sheet
-                    </button>
+                    {/* Removed Save Again and View Google Sheet buttons */}
                   </div>
                   
                   {/* Status Messages */}
@@ -720,7 +707,7 @@ app.get('/', (req, res) => {
 
             {/* Footer */}
             <div className="text-center mt-6 text-gray-500 text-xs">
-              <p>Premium Curtain Solutions - WORKING VERSION</p>
+              <p>Premium Curtain Solutions</p>
               <p className="mt-1">© 2025 D'Moksha. All rights reserved.</p>
               <p className="mt-2 text-green-400">✅ Complete Integration: Backend + Frontend + Google Sheets</p>
             </div>
