@@ -58,6 +58,7 @@ try {
 // Column headers for Google Sheets
 const SHEET_HEADERS = [
   'Timestamp',
+  'Customer Name',
   'Mode',
   'Width (inches)',
   'Height (inches)',
@@ -136,6 +137,7 @@ async function appendToGoogleSheet(data) {
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       }),
+      'Customer Name': data.customerName || '',
       'Mode': data.mode || 'single',
       'Width (inches)': parseFloat(data.width || 0),
       'Height (inches)': parseFloat(data.height || 0),
@@ -201,7 +203,7 @@ app.post('/api/save', async (req, res) => {
     }
 
     const {
-      width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
+      customerName, width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
       numberOfPanels, clothMeters, fabricCost, stitchingCost, totalCost, mode, timestamp
     } = req.body;
 
@@ -217,7 +219,7 @@ app.post('/api/save', async (req, res) => {
     }
 
     const dataToSave = {
-      width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
+      customerName, width, height, panelWidth, stitchStyle, stitchStyleCost, pricePerMeter,
       numberOfPanels, clothMeters, fabricCost, stitchingCost, totalCost,
       mode: mode || 'single',
       timestamp: timestamp || new Date().toISOString(),
@@ -280,7 +282,7 @@ app.get('/', (req, res) => {
     const CurtainCalculator = () => {
       const [mode, setMode] = useState('single');
       const [inputs, setInputs] = useState({
-        width: '', height: '', panelWidth: 22, stitchStyle: 'Plain Classic', pricePerMeter: ''
+        customerName: '', width: '', height: '', panelWidth: 22, stitchStyle: 'Plain Classic', pricePerMeter: ''
       });
       const [results, setResults] = useState({
         numberOfPanels: 0, clothMeters: 0, fabricCost: 0, stitchingCost: 0, totalCost: 0
@@ -352,6 +354,7 @@ app.get('/', (req, res) => {
           
           const dataToSave = {
             // Input data
+            customerName: inputs.customerName,
             width: inputs.width,
             height: inputs.height,
             panelWidth: inputs.panelWidth,
@@ -455,7 +458,7 @@ app.get('/', (req, res) => {
       };
 
       const resetForm = () => {
-        setInputs({ width: '', height: '', panelWidth: 22, stitchStyle: 'Plain Classic', pricePerMeter: '' });
+        setInputs({ customerName: '', width: '', height: '', panelWidth: 22, stitchStyle: 'Plain Classic', pricePerMeter: '' });
         setResults({ numberOfPanels: 0, clothMeters: 0, fabricCost: 0, stitchingCost: 0, totalCost: 0 });
         setIsCalculated(false);
         setSaveStatus('');
@@ -518,6 +521,18 @@ app.get('/', (req, res) => {
 
               {/* Input Fields */}
               <div className="space-y-5">
+                {/* Customer Name Input */}
+                <div>
+                  <label className="block text-amber-400 text-sm font-medium mb-2">Customer Name</label>
+                  <input
+                    type="text"
+                    value={inputs.customerName}
+                    onChange={(e) => handleInputChange('customerName', e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter customer name"
+                  />
+                </div>
+
                 {/* Width Input */}
                 <div>
                   <label className="block text-amber-400 text-sm font-medium mb-2">Width (inches) *</label>
