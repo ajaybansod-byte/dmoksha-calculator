@@ -199,7 +199,7 @@ if(mode!=='roman'){const firstOption=panelWidthOptions[key][value][0];setInputs(
 setIsCalculated(false);setValidationErrors({});setSaveStatus('');};const validateInputs=()=>{const errors={};
 const{width,height,pricePerMeter}=inputs;if(!width||parseFloat(width)<=0){errors.width='Width required and must be >0';}
 if(!height||parseFloat(height)<=0){errors.height='Height required and must be >0';}
-if(mode==='double'&&parseFloat(height)>90){errors.height='Height cannot exceed 90" for double width';}
+if(mode==='double'&&parseFloat(height)>105){errors.height='Height cannot exceed 105" for double width';}
 if(!pricePerMeter||parseFloat(pricePerMeter)<=0){errors.pricePerMeter='Price per meter required and must be >0';}
 setValidationErrors(errors);return Object.keys(errors).length===0;};const getStitchStyleCost=(styleName)=>{const style=stitchStyleOptions.find(s=>s.value===styleName);return style?style.cost:200;};
 const saveToGoogleSheets=async(calculationResults,isAutoSave=false)=>{try{setSaveStatus('saving');
@@ -222,7 +222,7 @@ setResults(calculationResults);setIsCalculated(true);saveToGoogleSheets(calculat
 const firstPanelWidth=mode==='roman'?50:panelWidthOptions[key]['Plain Classic'][0].value;
 setInputs({customerName:'',width:'',height:'',stitchStyle:'Plain Classic',panelWidth:firstPanelWidth,pricePerMeter:''});
 setResults({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,totalCost:0});setIsCalculated(false);setSaveStatus('');setValidationErrors({});};
-const isCalculateDisabled=()=>{const{width,height,pricePerMeter}=inputs;return!width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>90)||Object.keys(validationErrors).length>0;};
+const isCalculateDisabled=()=>{const{width,height,pricePerMeter}=inputs;return!width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>105)||Object.keys(validationErrors).length>0;};
 const getPanelOptions=()=>{if(mode==='roman')return[];const key=mode==='single'?\`single\${subMode}\`:'double';
 return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black px-4 py-6">
 <div className="max-w-md mx-auto"><div className="text-center mb-8"><h1 className="text-3xl font-bold text-white mb-2">D'Moksha</h1>
@@ -241,8 +241,8 @@ return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="m
 <div><label className="block text-amber-400 text-sm font-medium mb-2">Width (inches) *</label>
 <input type="number" value={inputs.width} onChange={(e)=>handleInputChange('width',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.width?'border-red-500':'border-gray-600'}\`} placeholder="Enter width"/>
 {validationErrors.width&&<p className="mt-1 text-red-400 text-xs">{validationErrors.width}</p>}</div>
-<div><label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) * {mode==='double'&&<span className="text-red-400">(Max: 90")</span>}</label>
-<input type="number" value={inputs.height} onChange={(e)=>handleInputChange('height',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.height?'border-red-500':'border-gray-600'}\`} placeholder="Enter height" max={mode==='double'?90:undefined}/>
+<div><label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) * {mode==='double'&&<span className="text-red-400">(Max: 105")</span>}</label>
+<input type="number" value={inputs.height} onChange={(e)=>handleInputChange('height',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.height?'border-red-500':'border-gray-600'}\`} placeholder="Enter height" max={mode==='double'?105:undefined}/>
 {validationErrors.height&&<p className="mt-1 text-red-400 text-xs">{validationErrors.height}</p>}</div>
 {mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Stitch Style</label>
 <div className="grid grid-cols-2 gap-2">{stitchStyleOptions.map((option)=>(<button key={option.value} onClick={()=>handleInputChange('stitchStyle',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.stitchStyle===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
