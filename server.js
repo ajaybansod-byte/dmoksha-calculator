@@ -247,9 +247,9 @@ return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="m
 {mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Stitch Style</label>
 <div className="grid grid-cols-2 gap-2">{stitchStyleOptions.map((option)=>(<button key={option.value} onClick={()=>handleInputChange('stitchStyle',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.stitchStyle===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
 <div className="text-xs opacity-80">{option.label}</div><div className="font-bold">₹{option.cost}</div></button>))}</div></div>)}
-{mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Finished Panel Width</label>
+{mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Finished Panel</label>
 <div className="grid grid-cols-2 gap-2">{getPanelOptions().map((option)=>(<button key={option.value} onClick={()=>handleInputChange('panelWidth',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.panelWidth===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
-<div className="text-xs opacity-80">{option.label}</div><div className="font-bold">{\`\${option.value}"\`}</div></button>))}</div></div>)}
+<div className="text-xs opacity-80">{option.label}</div><div className="font-bold">{\`\${option.value}" Gather\`}</div></button>))}</div></div>)}
 <div><label className="block text-amber-400 text-sm font-medium mb-2">Price per Meter (₹) *</label>
 <input type="number" step="0.01" value={inputs.pricePerMeter} onChange={(e)=>handleInputChange('pricePerMeter',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.pricePerMeter?'border-red-500':'border-gray-600'}\`} placeholder="Enter price per meter"/>
 {validationErrors.pricePerMeter&&<p className="mt-1 text-red-400 text-xs">{validationErrors.pricePerMeter}</p>}</div></div>
