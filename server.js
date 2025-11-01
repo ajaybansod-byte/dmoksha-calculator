@@ -107,7 +107,7 @@ async function appendToGoogleSheet(data) {
       'Sub Mode': data.subMode || '',
       'Width (inches)': parseFloat(data.width || 0),
       'Height (inches)': parseFloat(data.height || 0),
-      'Stitch Style': data.stitchStyle || '',
+      'Stitch Style': data.stitchStyle || 'American Pleat',
       'Stitch Style Cost (₹)': parseFloat(data.stitchStyleCost || 0),
       'Panel Width (inches)': parseInt(data.panelWidth || 0),
       'Price per Meter (₹)': parseFloat(data.pricePerMeter || 0),
@@ -227,7 +227,9 @@ setResults({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,totalCos
 const isCalculateDisabled=()=>{const{width,height,pricePerMeter}=inputs;return!width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>105)||Object.keys(validationErrors).length>0;};
 const getPanelOptions=()=>{if(mode==='roman')return[];const key=mode==='single'?\`single\${subMode}\`:'double';
 return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black px-4 py-6">
-<div className="max-w-md mx-auto"><div className="text-center mb-8"><h1 className="text-3xl font-bold text-white mb-2">D'Moksha</h1>
+<div className="max-w-md mx-auto"><div className="text-center mb-8">
+<img src="/images/logo.png" alt="D'Moksha Logo" className="h-20 mx-auto mb-4" onError={(e)=>{e.target.style.display='none';document.getElementById('fallback-title').style.display='block';}}/>
+<h1 id="fallback-title" className="text-3xl font-bold text-white mb-2" style={{display:'none'}}>D'Moksha</h1>
 <p className="text-amber-400 text-sm font-medium tracking-wide">Express yourself. Choose goodness</p>
 <p className="text-gray-400 text-xs mt-1">Pricing Calculator</p>
 <div className="w-20 h-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 mx-auto mt-2"></div></div>
@@ -284,6 +286,7 @@ async function startServer() {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Spreadsheet: https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}`);
     console.log(`🌐 Calculator: http://localhost:${PORT}`);
+    console.log(`🖼️  Logo: http://localhost:${PORT}/images/logo.png`);
     console.log('🎯 Features: Single Width (54"/48"), Double Width, Roman Blind');
   });
 }
