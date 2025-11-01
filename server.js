@@ -1,11 +1,13 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 const SPREADSHEET_ID = '1ejcZ4lI3Cua9OYv0kgnbU1tqOvDYi__IIIVXJbXy-aw';
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = 'dmoksha-calculator-service@dmoksha-calculator.iam.gserviceaccount.com';
