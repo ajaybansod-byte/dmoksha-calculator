@@ -56,9 +56,9 @@ try {
 
 const SHEET_HEADERS = [
   'Timestamp', 'Customer Name', 'Mode', 'Sub Mode', 'Width (inches)', 'Height (inches)',
-  'Stitch Style', 'Stitch Style Cost (₹)', 'Panel Width (inches)', 'Price per Meter (₹)',
-  'Number of Panels', 'Cloth Required (meters)', 'Fabric Cost (₹)', 'Stitching Cost (₹)',
-  'Total Cost (₹)', 'User IP', 'Browser Info'
+  'Stitch Style', 'Stitch Style Cost (₹)', 'Panel Width (inches)', 'Lining', 'Lining Cost (₹)',
+  'Price per Meter (₹)', 'Number of Panels', 'Cloth Required (meters)', 'Fabric Cost (₹)', 
+  'Stitching Cost (₹)', 'Total Cost (₹)', 'User IP', 'Browser Info'
 ];
 
 let doc, sheet;
@@ -110,6 +110,8 @@ async function appendToGoogleSheet(data) {
       'Stitch Style': data.stitchStyle || 'American Pleat',
       'Stitch Style Cost (₹)': parseFloat(data.stitchStyleCost || 0),
       'Panel Width (inches)': parseInt(data.panelWidth || 0),
+      'Lining': data.lining || 'No Lining',
+      'Lining Cost (₹)': parseFloat(data.liningCost || 0),
       'Price per Meter (₹)': parseFloat(data.pricePerMeter || 0),
       'Number of Panels': parseFloat(data.numberOfPanels || 0),
       'Cloth Required (meters)': parseFloat(data.clothMeters || 0),
@@ -149,14 +151,14 @@ app.post('/api/save', async (req, res) => {
       }
     }
     const { customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
-      panelWidth, pricePerMeter, numberOfPanels, clothMeters, fabricCost,
+      panelWidth, lining, liningCost, pricePerMeter, numberOfPanels, clothMeters, fabricCost,
       stitchingCost, totalCost, timestamp } = req.body;
     if (!width || !height || !pricePerMeter || numberOfPanels === undefined ||
         clothMeters === undefined || totalCost === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     const dataToSave = { customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
-      panelWidth, pricePerMeter, numberOfPanels, clothMeters, fabricCost, stitchingCost, totalCost,
+      panelWidth, lining, liningCost, pricePerMeter, numberOfPanels, clothMeters, fabricCost, stitchingCost, totalCost,
       timestamp: timestamp || new Date().toISOString(),
       userIp: req.ip || 'Unknown', userAgent: req.get('User-Agent') || 'Unknown' };
     const result = await appendToGoogleSheet(dataToSave);
@@ -186,11 +188,12 @@ app.get('/', (req, res) => {
 <script src="https://cdn.tailwindcss.com"></script></head><body><div id="root"></div>
 <script type="text/babel">
 const{useState}=React;const CurtainCalculator=()=>{const[mode,setMode]=useState('single');
-const[subMode,setSubMode]=useState('54');const[inputs,setInputs]=useState({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:22,pricePerMeter:''});
-const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,totalCost:0});
+const[subMode,setSubMode]=useState('54');const[inputs,setInputs]=useState({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:24,lining:'No Lining',pricePerMeter:''});
+const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});
 const[saveStatus,setSaveStatus]=useState('');const[isCalculated,setIsCalculated]=useState(false);
-const[validationErrors,setValidationErrors]=useState({});const panelWidthOptions={single54:{'American Pleat':[{label:'Very High Gather',value:22},{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'Very High Gather',value:20},{label:'High Gather',value:22}],'Rod Pocket':[{label:'Very High Gather',value:20},{label:'High Gather',value:22}],'Plain Classic':[{label:'Very High Gather',value:36},{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]},single48:{'American Pleat':[{label:'Very High Gather',value:20},{label:'High Gather',value:22},{label:'Medium Gather',value:24},{label:'Low Gather',value:26}],'Ripple':[{label:'Very High Gather',value:18},{label:'High Gather',value:20}],'Rod Pocket':[{label:'Very High Gather',value:18},{label:'High Gather',value:20}],'Plain Classic':[{label:'Very High Gather',value:34},{label:'High Gather',value:38},{label:'Medium Gather',value:42},{label:'Low Gather',value:46}]},double:{'American Pleat':[{label:'Very High Gather',value:22},{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'Very High Gather',value:20},{label:'High Gather',value:22}],'Rod Pocket':[{label:'Very High Gather',value:20},{label:'High Gather',value:22}],'Plain Classic':[{label:'Very High Gather',value:36},{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]}};
+const[validationErrors,setValidationErrors]=useState({});const panelWidthOptions={single54:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]},single48:{'American Pleat':[{label:'High Gather',value:22},{label:'Medium Gather',value:24},{label:'Low Gather',value:26}],'Ripple':[{label:'High Gather',value:20}],'Rod Pocket':[{label:'High Gather',value:20}],'Plain Classic':[{label:'High Gather',value:38},{label:'Medium Gather',value:42},{label:'Low Gather',value:46}]},double:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]}};
 const stitchStyleOptions=[{label:'American Pleat',value:'American Pleat',cost:250},{label:'Ripple',value:'Ripple',cost:350},{label:'Rod Pocket',value:'Rod Pocket',cost:300},{label:'Plain Classic',value:'Plain Classic',cost:200}];
+const liningOptions=[{label:'No Lining',value:'No Lining',cost:0},{label:'Normal Lining',value:'Normal Lining',cost:250},{label:'80% Blackout Lining',value:'80% Blackout Lining',cost:250},{label:'100% Blackout Lining',value:'100% Blackout Lining',cost:375}];
 const handleModeSwitch=(newMode)=>{setMode(newMode);if(newMode==='single'){setSubMode('54');}else{setSubMode('');}
 setIsCalculated(false);setValidationErrors({});setSaveStatus('');const key=newMode==='single'?'single54':'double';
 const firstOption=panelWidthOptions[key]['American Pleat'][0];setInputs(prev=>({...prev,stitchStyle:'American Pleat',panelWidth:firstOption.value}));};
@@ -204,11 +207,12 @@ if(!height||parseFloat(height)<=0){errors.height='Height required and must be >0
 if(mode==='double'&&parseFloat(height)>105){errors.height='Height cannot exceed 105" for double width';}
 if(!pricePerMeter||parseFloat(pricePerMeter)<=0){errors.pricePerMeter='Price per meter required and must be >0';}
 setValidationErrors(errors);return Object.keys(errors).length===0;};const getStitchStyleCost=(styleName)=>{const style=stitchStyleOptions.find(s=>s.value===styleName);return style?style.cost:250;};
+const getLiningCost=(liningName)=>{const lining=liningOptions.find(l=>l.value===liningName);return lining?lining.cost:0;};
 const saveToGoogleSheets=async(calculationResults,isAutoSave=false)=>{try{setSaveStatus('saving');
-const stitchStyleCost=mode!=='roman'?getStitchStyleCost(inputs.stitchStyle):0;const dataToSave={customerName:inputs.customerName,mode:mode,subMode:mode==='single'?\`\${subMode}" Panel\`:'',width:inputs.width,height:inputs.height,stitchStyle:mode!=='roman'?inputs.stitchStyle:'N/A',stitchStyleCost:stitchStyleCost,panelWidth:mode==='roman'?50:inputs.panelWidth,pricePerMeter:inputs.pricePerMeter,numberOfPanels:calculationResults.numberOfPanels,clothMeters:calculationResults.clothMeters,fabricCost:calculationResults.fabricCost,stitchingCost:calculationResults.stitchingCost,totalCost:calculationResults.totalCost,timestamp:new Date().toISOString()};
+const stitchStyleCost=mode!=='roman'?getStitchStyleCost(inputs.stitchStyle):0;const liningCost=mode!=='roman'?getLiningCost(inputs.lining):0;const dataToSave={customerName:inputs.customerName,mode:mode,subMode:mode==='single'?\`\${subMode}" Panel\`:'',width:inputs.width,height:inputs.height,stitchStyle:mode!=='roman'?inputs.stitchStyle:'N/A',stitchStyleCost:stitchStyleCost,panelWidth:mode==='roman'?50:inputs.panelWidth,lining:mode!=='roman'?inputs.lining:'N/A',liningCost:liningCost,pricePerMeter:inputs.pricePerMeter,numberOfPanels:calculationResults.numberOfPanels,clothMeters:calculationResults.clothMeters,fabricCost:calculationResults.fabricCost,stitchingCost:calculationResults.stitchingCost,totalCost:calculationResults.totalCost,timestamp:new Date().toISOString()};
 const response=await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dataToSave)});
 const result=await response.json();if(response.ok){setSaveStatus(isAutoSave?'auto-saved':'success');setTimeout(()=>setSaveStatus(''),3000);}else{setSaveStatus('error');setTimeout(()=>setSaveStatus(''),3000);}}catch(error){setSaveStatus('error');setTimeout(()=>setSaveStatus(''),3000);}};
-const calculateResults=()=>{if(!validateInputs())return;const{width,height,panelWidth,pricePerMeter,stitchStyle}=inputs;
+const calculateResults=()=>{if(!validateInputs())return;const{width,height,panelWidth,pricePerMeter,stitchStyle,lining}=inputs;
 let numberOfPanels,clothRequiredMeters,stitchingCost=0;if(mode==='roman'){const panelWidthRoman=50;
 numberOfPanels=Math.ceil(parseFloat(width)/panelWidthRoman);const extraHeight=20;const extraCloth=10;
 clothRequiredMeters=((parseFloat(height)+extraHeight)*numberOfPanels+extraCloth)*(2.54/100);
@@ -218,12 +222,12 @@ const stitchStyleCost=getStitchStyleCost(stitchStyle);stitchingCost=stitchStyleC
 numberOfPanels=Math.ceil(adjustedWidth/panelWidth);const finalWidth=adjustedWidth*54/panelWidth;
 clothRequiredMeters=finalWidth*(2.54/100);const stitchStyleCost=getStitchStyleCost(stitchStyle);stitchingCost=stitchStyleCost*numberOfPanels;}
 const roundedClothMeters=parseFloat(clothRequiredMeters.toFixed(1));const fabricCost=parseFloat((roundedClothMeters*parseFloat(pricePerMeter)).toFixed(2));
-stitchingCost=parseFloat(stitchingCost.toFixed(2));const totalCost=parseFloat((fabricCost+stitchingCost).toFixed(2));
-const calculationResults={numberOfPanels:numberOfPanels,clothMeters:roundedClothMeters,fabricCost:fabricCost,stitchingCost:stitchingCost,totalCost:totalCost};
+stitchingCost=parseFloat(stitchingCost.toFixed(2));const liningCost=mode!=='roman'?parseFloat((getLiningCost(lining)*numberOfPanels).toFixed(2)):0;const totalCost=parseFloat((fabricCost+stitchingCost+liningCost).toFixed(2));
+const calculationResults={numberOfPanels:numberOfPanels,clothMeters:roundedClothMeters,fabricCost:fabricCost,stitchingCost:stitchingCost,liningCost:liningCost,totalCost:totalCost};
 setResults(calculationResults);setIsCalculated(true);saveToGoogleSheets(calculationResults,true);};const resetForm=()=>{const key=mode==='roman'?'':(mode==='single'?\`single\${subMode}\`:'double');
 const firstPanelWidth=mode==='roman'?50:panelWidthOptions[key]['American Pleat'][0].value;
-setInputs({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:firstPanelWidth,pricePerMeter:''});
-setResults({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,totalCost:0});setIsCalculated(false);setSaveStatus('');setValidationErrors({});};
+setInputs({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:firstPanelWidth,lining:'No Lining',pricePerMeter:''});
+setResults({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});setIsCalculated(false);setSaveStatus('');setValidationErrors({});};
 const isCalculateDisabled=()=>{const{width,height,pricePerMeter}=inputs;return!width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>105)||Object.keys(validationErrors).length>0;};
 const getPanelOptions=()=>{if(mode==='roman')return[];const key=mode==='single'?\`single\${subMode}\`:'double';
 return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black px-4 py-6">
@@ -250,10 +254,13 @@ return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="m
 {validationErrors.height&&<p className="mt-1 text-red-400 text-xs">{validationErrors.height}</p>}</div>
 {mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Stitch Style</label>
 <div className="grid grid-cols-2 gap-2">{stitchStyleOptions.map((option)=>(<button key={option.value} onClick={()=>handleInputChange('stitchStyle',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.stitchStyle===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
-<div className="text-xs opacity-80">{option.label}</div><div className="font-bold">₹{option.cost}</div></button>))}</div></div>)}
+<div className="font-bold">{option.label}</div></button>))}</div></div>)}
 {mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Finished Panel</label>
 <div className="grid grid-cols-2 gap-2">{getPanelOptions().map((option)=>(<button key={option.value} onClick={()=>handleInputChange('panelWidth',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.panelWidth===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
 <div className="text-xs opacity-80">{option.label}</div><div className="font-bold">{\`\${option.value}" Width\`}</div></button>))}</div></div>)}
+{mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Lining</label>
+<div className="grid grid-cols-2 gap-2">{liningOptions.map((option)=>(<button key={option.value} onClick={()=>handleInputChange('lining',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.lining===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
+<div className="font-bold text-xs">{option.label}</div></button>))}</div></div>)}
 <div><label className="block text-amber-400 text-sm font-medium mb-2">Price per Meter (₹) *</label>
 <input type="number" step="0.01" value={inputs.pricePerMeter} onChange={(e)=>handleInputChange('pricePerMeter',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.pricePerMeter?'border-red-500':'border-gray-600'}\`} placeholder="Enter price per meter"/>
 {validationErrors.pricePerMeter&&<p className="mt-1 text-red-400 text-xs">{validationErrors.pricePerMeter}</p>}</div></div>
@@ -266,6 +273,7 @@ return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="m
 <div className="flex justify-between items-center"><span className="text-gray-300 text-sm">Fabric Cost:</span>
 <span className="text-white font-medium">₹{results.fabricCost}</span></div><div className="flex justify-between items-center">
 <span className="text-gray-300 text-sm">Stitching Cost:</span><span className="text-white font-medium">₹{results.stitchingCost}</span></div>
+{mode!=='roman'&&results.liningCost>0&&(<div className="flex justify-between items-center"><span className="text-gray-300 text-sm">Lining Cost:</span><span className="text-white font-medium">₹{results.liningCost}</span></div>)}
 <div className="flex justify-between items-center border-t border-gray-600 pt-3"><span className="text-amber-400 font-medium">Total Cost:</span>
 <span className="text-amber-400 font-bold text-lg">₹{results.totalCost}</span></div></div>
 <div className="mt-3 text-center"><span className={\`inline-block px-3 py-1 rounded-full text-xs font-medium \${mode==='single'?'bg-blue-600 bg-opacity-20 text-blue-400 border border-blue-500':mode==='double'?'bg-purple-600 bg-opacity-20 text-purple-400 border border-purple-500':'bg-green-600 bg-opacity-20 text-green-400 border border-green-500'}\`}>
