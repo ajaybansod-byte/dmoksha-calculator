@@ -192,7 +192,7 @@ const[subMode,setSubMode]=useState('54');const[inputs,setInputs]=useState({custo
 const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});
 const[saveStatus,setSaveStatus]=useState('');const[isCalculated,setIsCalculated]=useState(false);
 const[validationErrors,setValidationErrors]=useState({});const panelWidthOptions={single54:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]},single48:{'American Pleat':[{label:'High Gather',value:22},{label:'Medium Gather',value:24},{label:'Low Gather',value:26}],'Ripple':[{label:'High Gather',value:20}],'Rod Pocket':[{label:'High Gather',value:20}],'Plain Classic':[{label:'High Gather',value:38},{label:'Medium Gather',value:42},{label:'Low Gather',value:46}]},double:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]}};
-const stitchStyleOptions=[{label:'American Pleat',value:'American Pleat',cost:250},{label:'Ripple',value:'Ripple',cost:350},{label:'Rod Pocket',value:'Rod Pocket',cost:300},{label:'Plain Classic',value:'Plain Classic',cost:200}];
+const stitchStyleOptions=[{label:'American Pleat',value:'American Pleat',cost:275},{label:'Ripple',value:'Ripple',cost:350},{label:'Rod Pocket',value:'Rod Pocket',cost:300},{label:'Plain Classic',value:'Plain Classic',cost:200}];
 const liningOptions=[{label:'No Lining',value:'No Lining',cost:0},{label:'Normal Lining',value:'Normal Lining',cost:250},{label:'80% Blackout Lining',value:'80% Blackout Lining',cost:250},{label:'100% Blackout Lining',value:'100% Blackout Lining',cost:375}];
 const handleModeSwitch=(newMode)=>{setMode(newMode);if(newMode==='single'){setSubMode('54');}else{setSubMode('');}
 setIsCalculated(false);setValidationErrors({});setSaveStatus('');const key=newMode==='single'?'single54':'double';
@@ -301,3 +301,4 @@ async function startServer() {
 
 startServer();
 module.exports = app;
+
