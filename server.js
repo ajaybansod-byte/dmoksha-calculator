@@ -58,7 +58,10 @@ const SHEET_HEADERS = [
   'Timestamp', 'Customer Name', 'Mode', 'Sub Mode', 'Width (inches)', 'Height (inches)',
   'Stitch Style', 'Stitch Style Cost (₹)', 'Panel Width (inches)', 'Lining', 'Lining Cost (₹)',
   'Price per Meter (₹)', 'Number of Panels', 'Cloth Required (meters)', 'Fabric Cost (₹)',
-  'Stitching Cost (₹)', 'Total Cost (₹)', 'User IP', 'Browser Info'
+  'Stitching Cost (₹)', 'Total Cost (₹)',
+  'Track Type', 'Track Cost Per Ft (₹)', 'Total Feet Required', 'Number of Tracks',
+  'Track Size (ft)', 'Tracks Cost (₹)', 'Number of Panels (Hardware)', 'Weights', 'Weights Cost (₹)',
+  'User IP', 'Browser Info'
 ];
 
 let doc, sheet;
@@ -118,6 +121,15 @@ async function appendToGoogleSheet(data) {
       'Fabric Cost (₹)': parseFloat(data.fabricCost || 0),
       'Stitching Cost (₹)': parseFloat(data.stitchingCost || 0),
       'Total Cost (₹)': parseFloat(data.totalCost || 0),
+      'Track Type': data.trackType || '',
+      'Track Cost Per Ft (₹)': parseFloat(data.trackCostPerFt || 0),
+      'Total Feet Required': parseFloat(data.totalFeetRequired || 0),
+      'Number of Tracks': parseInt(data.numTracks || 0),
+      'Track Size (ft)': parseInt(data.trackSize || 0),
+      'Tracks Cost (₹)': parseFloat(data.tracksTotalCost || 0),
+      'Number of Panels (Hardware)': parseInt(data.hwNumPanels || 0),
+      'Weights': data.weights || '',
+      'Weights Cost (₹)': parseFloat(data.weightsTotalCost || 0),
       'User IP': data.userIp || 'Unknown',
       'Browser Info': data.userAgent ? data.userAgent.substring(0, 100) : 'Unknown'
     };
@@ -205,7 +217,7 @@ const CurtainCalculator=()=>{
   const[inputs,setInputs]=useState({
     customerName:'',width:'',height:'',
     stitchStyle:'American Pleat',panelWidth:24,lining:'No Lining',pricePerMeter:'',
-    track:'American',weights:'No'
+    track:'American',weights:'No',numPanels:''
   });
   const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});
   const[hardwareResults,setHardwareResults]=useState({totalFeet:0,numTracks:0,trackSize:0,tracksTotalCost:0,weightsTotalCost:0,totalCost:0});
@@ -261,7 +273,7 @@ const CurtainCalculator=()=>{
     if(newMode==='single'){setSubMode('54');}else{setSubMode('');}
     setIsCalculated(false);setValidationErrors({});setSaveStatus('');
     if(newMode==='hardware'){
-      setInputs(prev=>({...prev,track:'American',weights:'No'}));
+      setInputs(prev=>({...prev,track:'American',weights:'No',numPanels:''}));
     } else {
       const key=newMode==='single'?'single54':'double';
       if(newMode!=='roman'){
@@ -295,6 +307,9 @@ const CurtainCalculator=()=>{
     if(!width||parseFloat(width)<=0){errors.width='Width required and must be >0';}
     if(!height||parseFloat(height)<=0){errors.height='Height required and must be >0';}
     if(mode==='double'&&parseFloat(height)>105){errors.height='Height cannot exceed 105" for double width';}
+    if(mode==='hardware'){
+      if(!inputs.numPanels||parseInt(inputs.numPanels)<=0){errors.numPanels='Number of panels required and must be >0';}
+    }
     if(mode!=='hardware'){
       if(!pricePerMeter||parseFloat(pricePerMeter)<=0){errors.pricePerMeter='Price per meter required and must be >0';}
     }
@@ -337,17 +352,26 @@ const CurtainCalculator=()=>{
           subMode:\`Track: \${inputs.track} | Weights: \${inputs.weights}\`,
           width:inputs.width,
           height:inputs.height,
-          stitchStyle:inputs.track,
-          stitchStyleCost:getTrackCost(inputs.track),
-          panelWidth:hwData.trackSize,
-          lining:inputs.weights==='Yes'?'With Weights':'No Weights',
-          liningCost:hwData.weightsTotalCost,
+          stitchStyle:'',
+          stitchStyleCost:0,
+          panelWidth:0,
+          lining:'',
+          liningCost:0,
           pricePerMeter:0,
           numberOfPanels:hwData.numTracks,
-          clothMeters:hwData.totalFeet,
-          fabricCost:hwData.tracksTotalCost,
+          clothMeters:0,
+          fabricCost:0,
           stitchingCost:0,
           totalCost:hwData.totalCost,
+          trackType:inputs.track,
+          trackCostPerFt:getTrackCost(inputs.track),
+          totalFeetRequired:hwData.totalFeet,
+          numTracks:hwData.numTracks,
+          trackSize:hwData.trackSize,
+          tracksTotalCost:hwData.tracksTotalCost,
+          hwNumPanels:hwData.hwPanels,
+          weights:inputs.weights,
+          weightsTotalCost:hwData.weightsTotalCost,
           timestamp:new Date().toISOString()
         };
       }else{
@@ -384,13 +408,15 @@ const CurtainCalculator=()=>{
       const trackInfo=getHardwareTrackInfo(parseFloat(inputs.width));
       const trackCost=getTrackCost(inputs.track);
       const weightCost=getWeightCost(inputs.weights);
+      const hwPanels=parseInt(inputs.numPanels);
       const tracksTotalCost=parseFloat((trackCost*trackInfo.totalFeet).toFixed(2));
-      const weightsTotalCost=parseFloat((weightCost*trackInfo.numTracks).toFixed(2));
+      const weightsTotalCost=parseFloat((weightCost*hwPanels).toFixed(2));
       const totalCost=parseFloat((tracksTotalCost+weightsTotalCost).toFixed(2));
       const hwData={
         totalFeet:trackInfo.totalFeet,
         numTracks:trackInfo.numTracks,
         trackSize:trackInfo.trackSize,
+        hwPanels:hwPanels,
         tracksTotalCost,weightsTotalCost,totalCost
       };
       setHardwareResults(hwData);
@@ -434,8 +460,8 @@ const CurtainCalculator=()=>{
 
   const resetForm=()=>{
     if(mode==='hardware'){
-      setInputs(prev=>({...prev,customerName:'',width:'',height:'',track:'American',weights:'No'}));
-      setHardwareResults({totalFeet:0,numTracks:0,trackSize:0,tracksTotalCost:0,weightsTotalCost:0,totalCost:0});
+      setInputs(prev=>({...prev,customerName:'',width:'',height:'',track:'American',weights:'No',numPanels:''}));
+      setHardwareResults({totalFeet:0,numTracks:0,trackSize:0,hwPanels:0,tracksTotalCost:0,weightsTotalCost:0,totalCost:0});
     }else{
       const key=mode==='roman'?'':(mode==='single'?\`single\${subMode}\`:'double');
       const firstPanelWidth=mode==='roman'?50:panelWidthOptions[key]['American Pleat'][0].value;
@@ -448,7 +474,7 @@ const CurtainCalculator=()=>{
   const isCalculateDisabled=()=>{
     const{width,height,pricePerMeter}=inputs;
     if(mode==='hardware'){
-      return !width||!height||Object.keys(validationErrors).length>0;
+      return !width||!height||!inputs.numPanels||parseInt(inputs.numPanels)<=0||Object.keys(validationErrors).length>0;
     }
     return !width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>105)||Object.keys(validationErrors).length>0;
   };
@@ -517,6 +543,15 @@ const CurtainCalculator=()=>{
               <input type="number" value={inputs.height} onChange={(e)=>handleInputChange('height',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.height?'border-red-500':'border-gray-600'}\`} placeholder="Enter height" max={mode==='double'?105:undefined}/>
               {validationErrors.height&&<p className="mt-1 text-red-400 text-xs">{validationErrors.height}</p>}
             </div>
+
+            {/* Number of Panels - Hardware only */}
+            {mode==='hardware'&&(
+              <div>
+                <label className="block text-amber-400 text-sm font-medium mb-2">Number of Panels *</label>
+                <input type="number" min="1" step="1" value={inputs.numPanels} onChange={(e)=>handleInputChange('numPanels',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.numPanels?'border-red-500':'border-gray-600'}\`} placeholder="Enter number of panels"/>
+                {validationErrors.numPanels&&<p className="mt-1 text-red-400 text-xs">{validationErrors.numPanels}</p>}
+              </div>
+            )}
 
             {/* HARDWARE SPECIFIC FIELDS */}
             {mode==='hardware'&&(
@@ -645,9 +680,13 @@ const CurtainCalculator=()=>{
                   <span className="text-gray-300 text-sm">Track Cost:</span>
                   <span className="text-white font-medium">₹{hardwareResults.tracksTotalCost}</span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Number of Panels:</span>
+                  <span className="text-white font-medium">{hardwareResults.hwPanels}</span>
+                </div>
                 {inputs.weights==='Yes'&&(
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-300 text-sm">Weights Cost:</span>
+                    <span className="text-gray-300 text-sm">Weights Cost <span className="text-gray-500 text-xs">(₹170 × {hardwareResults.hwPanels} panels)</span>:</span>
                     <span className="text-white font-medium">₹{hardwareResults.weightsTotalCost}</span>
                   </div>
                 )}
