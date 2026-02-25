@@ -85,6 +85,11 @@ async function initializeGoogleSheets() {
       console.log('✅ Created new worksheet');
     } else {
       await sheet.loadHeaderRow();
+      // Resize sheet if it doesn't have enough columns for all headers
+      if (sheet.columnCount < SHEET_HEADERS.length) {
+        await sheet.resize({ rowCount: sheet.rowCount, columnCount: SHEET_HEADERS.length });
+        console.log(`✅ Sheet resized to ${SHEET_HEADERS.length} columns`);
+      }
       await sheet.setHeaderRow(SHEET_HEADERS);
       console.log('✅ Headers updated');
     }
