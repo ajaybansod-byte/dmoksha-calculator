@@ -57,8 +57,9 @@ try {
 const SHEET_HEADERS = [
   'Timestamp', 'Customer Name', 'Mode', 'Sub Mode', 'Width (inches)', 'Height (inches)',
   'Stitch Style', 'Stitch Style Cost (₹)', 'Panel Width (inches)', 'Lining', 'Lining Cost (₹)',
-  'Price per Meter (₹)', 'Number of Panels', 'Cloth Required (meters)', 'Fabric Cost (₹)', 
-  'Stitching Cost (₹)', 'Total Cost (₹)', 'User IP', 'Browser Info'
+  'Tracks', 'Tracks Cost (₹)', 'Weights', 'Weights Cost (₹)', 'Total Feet', 'Number of Tracks',
+  'Track Details', 'Price per Meter (₹)', 'Number of Panels', 'Cloth Required (meters)', 
+  'Fabric Cost (₹)', 'Stitching Cost (₹)', 'Total Cost (₹)', 'User IP', 'Browser Info'
 ];
 
 let doc, sheet;
@@ -107,11 +108,18 @@ async function appendToGoogleSheet(data) {
       'Sub Mode': data.subMode || '',
       'Width (inches)': parseFloat(data.width || 0),
       'Height (inches)': parseFloat(data.height || 0),
-      'Stitch Style': data.stitchStyle || 'American Pleat',
+      'Stitch Style': data.stitchStyle || 'N/A',
       'Stitch Style Cost (₹)': parseFloat(data.stitchStyleCost || 0),
       'Panel Width (inches)': parseInt(data.panelWidth || 0),
-      'Lining': data.lining || 'No Lining',
+      'Lining': data.lining || 'N/A',
       'Lining Cost (₹)': parseFloat(data.liningCost || 0),
+      'Tracks': data.tracks || 'N/A',
+      'Tracks Cost (₹)': parseFloat(data.tracksCost || 0),
+      'Weights': data.weights || 'N/A',
+      'Weights Cost (₹)': parseFloat(data.weightsCost || 0),
+      'Total Feet': parseFloat(data.totalFeet || 0),
+      'Number of Tracks': parseInt(data.numberOfTracks || 0),
+      'Track Details': data.trackDetails || 'N/A',
       'Price per Meter (₹)': parseFloat(data.pricePerMeter || 0),
       'Number of Panels': parseFloat(data.numberOfPanels || 0),
       'Cloth Required (meters)': parseFloat(data.clothMeters || 0),
@@ -188,12 +196,14 @@ app.get('/', (req, res) => {
 <script src="https://cdn.tailwindcss.com"></script></head><body><div id="root"></div>
 <script type="text/babel">
 const{useState}=React;const CurtainCalculator=()=>{const[mode,setMode]=useState('single');
-const[subMode,setSubMode]=useState('54');const[inputs,setInputs]=useState({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:24,lining:'No Lining',pricePerMeter:''});
-const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});
+const[subMode,setSubMode]=useState('54');const[inputs,setInputs]=useState({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:24,lining:'No Lining',tracks:'American',weights:'No',pricePerMeter:''});
+const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalFeet:0,numberOfTracks:0,trackDetails:'',totalCost:0});
 const[saveStatus,setSaveStatus]=useState('');const[isCalculated,setIsCalculated]=useState(false);
 const[validationErrors,setValidationErrors]=useState({});const panelWidthOptions={single54:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]},single48:{'American Pleat':[{label:'High Gather',value:22},{label:'Medium Gather',value:24},{label:'Low Gather',value:26}],'Ripple':[{label:'High Gather',value:20}],'Rod Pocket':[{label:'High Gather',value:20}],'Plain Classic':[{label:'High Gather',value:38},{label:'Medium Gather',value:42},{label:'Low Gather',value:46}]},double:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]}};
-const stitchStyleOptions=[{label:'American Pleat',value:'American Pleat',cost:275},{label:'Ripple',value:'Ripple',cost:350},{label:'Rod Pocket',value:'Rod Pocket',cost:300},{label:'Plain Classic',value:'Plain Classic',cost:200}];
+const stitchStyleOptions=[{label:'American Pleat',value:'American Pleat',cost:250},{label:'Ripple',value:'Ripple',cost:350},{label:'Rod Pocket',value:'Rod Pocket',cost:300},{label:'Plain Classic',value:'Plain Classic',cost:200}];
 const liningOptions=[{label:'No Lining',value:'No Lining',cost:0},{label:'Normal Lining',value:'Normal Lining',cost:250},{label:'80% Blackout Lining',value:'80% Blackout Lining',cost:250},{label:'100% Blackout Lining',value:'100% Blackout Lining',cost:375}];
+const tracksOptions=[{label:'American',value:'American',cost:250},{label:'Ripple',value:'Ripple',cost:320},{label:'Classic Rod',value:'Classic Rod',cost:250}];
+const weightsOptions=[{label:'Yes',value:'Yes',cost:170},{label:'No',value:'No',cost:0}];
 const handleModeSwitch=(newMode)=>{setMode(newMode);if(newMode==='single'){setSubMode('54');}else{setSubMode('');}
 setIsCalculated(false);setValidationErrors({});setSaveStatus('');const key=newMode==='single'?'single54':'double';
 const firstOption=panelWidthOptions[key]['American Pleat'][0];setInputs(prev=>({...prev,stitchStyle:'American Pleat',panelWidth:firstOption.value}));};
@@ -208,6 +218,8 @@ if(mode==='double'&&parseFloat(height)>105){errors.height='Height cannot exceed 
 if(!pricePerMeter||parseFloat(pricePerMeter)<=0){errors.pricePerMeter='Price per meter required and must be >0';}
 setValidationErrors(errors);return Object.keys(errors).length===0;};const getStitchStyleCost=(styleName)=>{const style=stitchStyleOptions.find(s=>s.value===styleName);return style?style.cost:250;};
 const getLiningCost=(liningName)=>{const lining=liningOptions.find(l=>l.value===liningName);return lining?lining.cost:0;};
+const getTracksCost=(tracksName)=>{const track=tracksOptions.find(t=>t.value===tracksName);return track?track.cost:250;};
+const getWeightsCost=(weightsName)=>{const weight=weightsOptions.find(w=>w.value===weightsName);return weight?weight.cost:0;};
 const saveToGoogleSheets=async(calculationResults,isAutoSave=false)=>{try{setSaveStatus('saving');
 const stitchStyleCost=mode!=='roman'?getStitchStyleCost(inputs.stitchStyle):0;const liningCost=mode!=='roman'?getLiningCost(inputs.lining):0;const dataToSave={customerName:inputs.customerName,mode:mode,subMode:mode==='single'?\`\${subMode}" Panel\`:'',width:inputs.width,height:inputs.height,stitchStyle:mode!=='roman'?inputs.stitchStyle:'N/A',stitchStyleCost:stitchStyleCost,panelWidth:mode==='roman'?50:inputs.panelWidth,lining:mode!=='roman'?inputs.lining:'N/A',liningCost:liningCost,pricePerMeter:inputs.pricePerMeter,numberOfPanels:calculationResults.numberOfPanels,clothMeters:calculationResults.clothMeters,fabricCost:calculationResults.fabricCost,stitchingCost:calculationResults.stitchingCost,totalCost:calculationResults.totalCost,timestamp:new Date().toISOString()};
 const response=await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dataToSave)});
@@ -301,4 +313,3 @@ async function startServer() {
 
 startServer();
 module.exports = app;
-
