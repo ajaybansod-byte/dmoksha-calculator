@@ -170,7 +170,10 @@ app.post('/api/save', async (req, res) => {
     const {
       customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
       panelWidth, lining, liningCost, pricePerMeter, numberOfPanels, clothMeters, fabricCost,
-      stitchingCost, totalCost, timestamp
+      stitchingCost, totalCost, timestamp,
+      // Hardware-specific fields
+      trackType, trackCostPerFt, totalFeetRequired, numTracks, trackSize,
+      tracksTotalCost, hwNumPanels, weights, weightsTotalCost
     } = req.body;
 
     // For hardware mode, only width, height, totalCost are strictly required
@@ -179,12 +182,18 @@ app.post('/api/save', async (req, res) => {
     }
 
     const dataToSave = {
-      customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
-      panelWidth, lining, liningCost, pricePerMeter, numberOfPanels, clothMeters,
-      fabricCost, stitchingCost, totalCost,
+      // Shared fields
+      customerName, mode, subMode, width, height,
+      totalCost,
       timestamp: timestamp || new Date().toISOString(),
       userIp: req.ip || 'Unknown',
-      userAgent: req.get('User-Agent') || 'Unknown'
+      userAgent: req.get('User-Agent') || 'Unknown',
+      // Curtain-specific fields
+      stitchStyle, stitchStyleCost, panelWidth, lining, liningCost,
+      pricePerMeter, numberOfPanels, clothMeters, fabricCost, stitchingCost,
+      // Hardware-specific fields
+      trackType, trackCostPerFt, totalFeetRequired, numTracks, trackSize,
+      tracksTotalCost, hwNumPanels, weights, weightsTotalCost
     };
 
     const result = await appendToGoogleSheet(dataToSave);
