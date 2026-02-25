@@ -57,7 +57,7 @@ try {
 const SHEET_HEADERS = [
   'Timestamp', 'Customer Name', 'Mode', 'Sub Mode', 'Width (inches)', 'Height (inches)',
   'Stitch Style', 'Stitch Style Cost (₹)', 'Panel Width (inches)', 'Lining', 'Lining Cost (₹)',
-  'Price per Meter (₹)', 'Number of Panels', 'Cloth Required (meters)', 'Fabric Cost (₹)', 
+  'Price per Meter (₹)', 'Number of Panels', 'Cloth Required (meters)', 'Fabric Cost (₹)',
   'Stitching Cost (₹)', 'Total Cost (₹)', 'User IP', 'Browser Info'
 ];
 
@@ -107,10 +107,10 @@ async function appendToGoogleSheet(data) {
       'Sub Mode': data.subMode || '',
       'Width (inches)': parseFloat(data.width || 0),
       'Height (inches)': parseFloat(data.height || 0),
-      'Stitch Style': data.stitchStyle || 'American Pleat',
+      'Stitch Style': data.stitchStyle || '',
       'Stitch Style Cost (₹)': parseFloat(data.stitchStyleCost || 0),
       'Panel Width (inches)': parseInt(data.panelWidth || 0),
-      'Lining': data.lining || 'No Lining',
+      'Lining': data.lining || '',
       'Lining Cost (₹)': parseFloat(data.liningCost || 0),
       'Price per Meter (₹)': parseFloat(data.pricePerMeter || 0),
       'Number of Panels': parseFloat(data.numberOfPanels || 0),
@@ -150,21 +150,32 @@ app.post('/api/save', async (req, res) => {
         return res.status(500).json({ error: 'Failed to connect', details: connectionStatus.error });
       }
     }
-    const { customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
+    const {
+      customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
       panelWidth, lining, liningCost, pricePerMeter, numberOfPanels, clothMeters, fabricCost,
-      stitchingCost, totalCost, timestamp } = req.body;
-    if (!width || !height || !pricePerMeter || numberOfPanels === undefined ||
-        clothMeters === undefined || totalCost === undefined) {
+      stitchingCost, totalCost, timestamp
+    } = req.body;
+
+    // For hardware mode, only width, height, totalCost are strictly required
+    if (!width || !height || totalCost === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    const dataToSave = { customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
-      panelWidth, lining, liningCost, pricePerMeter, numberOfPanels, clothMeters, fabricCost, stitchingCost, totalCost,
+
+    const dataToSave = {
+      customerName, mode, subMode, width, height, stitchStyle, stitchStyleCost,
+      panelWidth, lining, liningCost, pricePerMeter, numberOfPanels, clothMeters,
+      fabricCost, stitchingCost, totalCost,
       timestamp: timestamp || new Date().toISOString(),
-      userIp: req.ip || 'Unknown', userAgent: req.get('User-Agent') || 'Unknown' };
+      userIp: req.ip || 'Unknown',
+      userAgent: req.get('User-Agent') || 'Unknown'
+    };
+
     const result = await appendToGoogleSheet(dataToSave);
     if (result.success) {
-      res.json({ message: 'Saved successfully', rowNumber: result.rowNumber,
-        spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}` });
+      res.json({
+        message: 'Saved successfully', rowNumber: result.rowNumber,
+        spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}`
+      });
     } else {
       res.status(500).json({ error: 'Failed to save', details: result.error });
     }
@@ -187,101 +198,529 @@ app.get('/', (req, res) => {
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script></head><body><div id="root"></div>
 <script type="text/babel">
-const{useState}=React;const CurtainCalculator=()=>{const[mode,setMode]=useState('single');
-const[subMode,setSubMode]=useState('54');const[inputs,setInputs]=useState({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:24,lining:'No Lining',pricePerMeter:''});
-const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});
-const[saveStatus,setSaveStatus]=useState('');const[isCalculated,setIsCalculated]=useState(false);
-const[validationErrors,setValidationErrors]=useState({});const panelWidthOptions={single54:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]},single48:{'American Pleat':[{label:'High Gather',value:22},{label:'Medium Gather',value:24},{label:'Low Gather',value:26}],'Ripple':[{label:'High Gather',value:20}],'Rod Pocket':[{label:'High Gather',value:20}],'Plain Classic':[{label:'High Gather',value:38},{label:'Medium Gather',value:42},{label:'Low Gather',value:46}]},double:{'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],'Ripple':[{label:'High Gather',value:22}],'Rod Pocket':[{label:'High Gather',value:22}],'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]}};
-const stitchStyleOptions=[{label:'American Pleat',value:'American Pleat',cost:275},{label:'Ripple',value:'Ripple',cost:350},{label:'Rod Pocket',value:'Rod Pocket',cost:300},{label:'Plain Classic',value:'Plain Classic',cost:200}];
-const liningOptions=[{label:'No Lining',value:'No Lining',cost:0},{label:'Normal Lining',value:'Normal Lining',cost:250},{label:'80% Blackout Lining',value:'80% Blackout Lining',cost:250},{label:'100% Blackout Lining',value:'100% Blackout Lining',cost:375}];
-const handleModeSwitch=(newMode)=>{setMode(newMode);if(newMode==='single'){setSubMode('54');}else{setSubMode('');}
-setIsCalculated(false);setValidationErrors({});setSaveStatus('');const key=newMode==='single'?'single54':'double';
-const firstOption=panelWidthOptions[key]['American Pleat'][0];setInputs(prev=>({...prev,stitchStyle:'American Pleat',panelWidth:firstOption.value}));};
-const handleSubModeSwitch=(newSubMode)=>{setSubMode(newSubMode);setIsCalculated(false);setValidationErrors({});setSaveStatus('');
-const key=\`single\${newSubMode}\`;const firstOption=panelWidthOptions[key][inputs.stitchStyle][0];setInputs(prev=>({...prev,panelWidth:firstOption.value}));};
-const handleInputChange=(field,value)=>{if(field==='stitchStyle'){const key=mode==='roman'?'':(mode==='single'?\`single\${subMode}\`:'double');
-if(mode!=='roman'){const firstOption=panelWidthOptions[key][value][0];setInputs(prev=>({...prev,stitchStyle:value,panelWidth:firstOption.value}));}else{setInputs(prev=>({...prev,[field]:value}));}}else{setInputs(prev=>({...prev,[field]:value}));}
-setIsCalculated(false);setValidationErrors({});setSaveStatus('');};const validateInputs=()=>{const errors={};
-const{width,height,pricePerMeter}=inputs;if(!width||parseFloat(width)<=0){errors.width='Width required and must be >0';}
-if(!height||parseFloat(height)<=0){errors.height='Height required and must be >0';}
-if(mode==='double'&&parseFloat(height)>105){errors.height='Height cannot exceed 105" for double width';}
-if(!pricePerMeter||parseFloat(pricePerMeter)<=0){errors.pricePerMeter='Price per meter required and must be >0';}
-setValidationErrors(errors);return Object.keys(errors).length===0;};const getStitchStyleCost=(styleName)=>{const style=stitchStyleOptions.find(s=>s.value===styleName);return style?style.cost:250;};
-const getLiningCost=(liningName)=>{const lining=liningOptions.find(l=>l.value===liningName);return lining?lining.cost:0;};
-const saveToGoogleSheets=async(calculationResults,isAutoSave=false)=>{try{setSaveStatus('saving');
-const stitchStyleCost=mode!=='roman'?getStitchStyleCost(inputs.stitchStyle):0;const liningCost=mode!=='roman'?getLiningCost(inputs.lining):0;const dataToSave={customerName:inputs.customerName,mode:mode,subMode:mode==='single'?\`\${subMode}" Panel\`:'',width:inputs.width,height:inputs.height,stitchStyle:mode!=='roman'?inputs.stitchStyle:'N/A',stitchStyleCost:stitchStyleCost,panelWidth:mode==='roman'?50:inputs.panelWidth,lining:mode!=='roman'?inputs.lining:'N/A',liningCost:liningCost,pricePerMeter:inputs.pricePerMeter,numberOfPanels:calculationResults.numberOfPanels,clothMeters:calculationResults.clothMeters,fabricCost:calculationResults.fabricCost,stitchingCost:calculationResults.stitchingCost,totalCost:calculationResults.totalCost,timestamp:new Date().toISOString()};
-const response=await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dataToSave)});
-const result=await response.json();if(response.ok){setSaveStatus(isAutoSave?'auto-saved':'success');setTimeout(()=>setSaveStatus(''),3000);}else{setSaveStatus('error');setTimeout(()=>setSaveStatus(''),3000);}}catch(error){setSaveStatus('error');setTimeout(()=>setSaveStatus(''),3000);}};
-const calculateResults=()=>{if(!validateInputs())return;const{width,height,panelWidth,pricePerMeter,stitchStyle,lining}=inputs;
-let numberOfPanels,clothRequiredMeters,stitchingCost=0;if(mode==='roman'){const panelWidthRoman=50;
-numberOfPanels=Math.ceil(parseFloat(width)/panelWidthRoman);const extraHeight=20;const extraCloth=10;
-clothRequiredMeters=((parseFloat(height)+extraHeight)*numberOfPanels+extraCloth)*(2.54/100);
-stitchingCost=((parseFloat(width)/12)*(parseFloat(height)/12))*175;}else if(mode==='single'){const extraWidth=(6/50)*parseFloat(width);const adjustedWidth=parseFloat(width)+extraWidth;
-numberOfPanels=Math.ceil(adjustedWidth/panelWidth);clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
-const stitchStyleCost=getStitchStyleCost(stitchStyle);stitchingCost=stitchStyleCost*numberOfPanels;}else{const extraWidth=(6/50)*parseFloat(width);const adjustedWidth=parseFloat(width)+extraWidth;
-numberOfPanels=Math.ceil(adjustedWidth/panelWidth);const finalWidth=adjustedWidth*54/panelWidth;
-clothRequiredMeters=finalWidth*(2.54/100);const stitchStyleCost=getStitchStyleCost(stitchStyle);stitchingCost=stitchStyleCost*numberOfPanels;}
-const roundedClothMeters=parseFloat(clothRequiredMeters.toFixed(1));const fabricCost=parseFloat((roundedClothMeters*parseFloat(pricePerMeter)).toFixed(2));
-stitchingCost=parseFloat(stitchingCost.toFixed(2));const liningCost=mode!=='roman'?parseFloat((getLiningCost(lining)*numberOfPanels).toFixed(2)):0;const totalCost=parseFloat((fabricCost+stitchingCost+liningCost).toFixed(2));
-const calculationResults={numberOfPanels:numberOfPanels,clothMeters:roundedClothMeters,fabricCost:fabricCost,stitchingCost:stitchingCost,liningCost:liningCost,totalCost:totalCost};
-setResults(calculationResults);setIsCalculated(true);saveToGoogleSheets(calculationResults,true);};const resetForm=()=>{const key=mode==='roman'?'':(mode==='single'?\`single\${subMode}\`:'double');
-const firstPanelWidth=mode==='roman'?50:panelWidthOptions[key]['American Pleat'][0].value;
-setInputs({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:firstPanelWidth,lining:'No Lining',pricePerMeter:''});
-setResults({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});setIsCalculated(false);setSaveStatus('');setValidationErrors({});};
-const isCalculateDisabled=()=>{const{width,height,pricePerMeter}=inputs;return!width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>105)||Object.keys(validationErrors).length>0;};
-const getPanelOptions=()=>{if(mode==='roman')return[];const key=mode==='single'?\`single\${subMode}\`:'double';
-return panelWidthOptions[key][inputs.stitchStyle]||[];};return(<div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black px-4 py-6">
-<div className="max-w-md mx-auto"><div className="text-center mb-8">
-<img src="/images/logo.png" alt="D'Moksha Logo" className="h-20 mx-auto mb-4" onError={(e)=>{e.target.style.display='none';document.getElementById('fallback-title').style.display='block';}}/>
-<h1 id="fallback-title" className="text-3xl font-bold text-white mb-2" style={{display:'none'}}>D'Moksha</h1>
-<p className="text-amber-400 text-sm font-medium tracking-wide">Express yourself. Choose goodness</p>
-<p className="text-gray-400 text-xs mt-1">Pricing Calculator</p>
-<div className="w-20 h-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 mx-auto mt-2"></div></div>
-<div className="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-gray-700">
-<div className="mb-6"><div className="flex bg-gray-700 rounded-xl p-1"><button onClick={()=>handleModeSwitch('single')} className={\`flex-1 py-2 px-4 rounded-lg text-xs font-medium transition-all duration-300 \${mode==='single'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>Single Width</button>
-<button onClick={()=>handleModeSwitch('double')} className={\`flex-1 py-2 px-4 rounded-lg text-xs font-medium transition-all duration-300 \${mode==='double'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>Double Width</button>
-<button onClick={()=>handleModeSwitch('roman')} className={\`flex-1 py-2 px-4 rounded-lg text-xs font-medium transition-all duration-300 \${mode==='roman'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>Roman Blind</button></div></div>
-{mode==='single'&&(<div className="mb-6"><div className="flex bg-gray-700 rounded-xl p-1"><button onClick={()=>handleSubModeSwitch('54')} className={\`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 \${subMode==='54'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>54" Panel</button>
-<button onClick={()=>handleSubModeSwitch('48')} className={\`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 \${subMode==='48'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>48" Panel</button></div></div>)}
-<h2 className="text-xl font-semibold text-white mb-6 text-center">{mode==='single'?\`Single Width - \${subMode}" Panel\`:mode==='double'?'Double Width':'Roman Blind'} Calculator</h2>
-<div className="space-y-5"><div><label className="block text-amber-400 text-sm font-medium mb-2">Customer Name</label>
-<input type="text" value={inputs.customerName} onChange={(e)=>handleInputChange('customerName',e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200" placeholder="Enter customer name"/></div>
-<div><label className="block text-amber-400 text-sm font-medium mb-2">Width (inches) *</label>
-<input type="number" value={inputs.width} onChange={(e)=>handleInputChange('width',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.width?'border-red-500':'border-gray-600'}\`} placeholder="Enter width"/>
-{validationErrors.width&&<p className="mt-1 text-red-400 text-xs">{validationErrors.width}</p>}</div>
-<div><label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) * {mode==='double'&&<span className="text-red-400">(Max: 105")</span>}</label>
-<input type="number" value={inputs.height} onChange={(e)=>handleInputChange('height',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.height?'border-red-500':'border-gray-600'}\`} placeholder="Enter height" max={mode==='double'?105:undefined}/>
-{validationErrors.height&&<p className="mt-1 text-red-400 text-xs">{validationErrors.height}</p>}</div>
-{mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Stitch Style</label>
-<div className="grid grid-cols-2 gap-2">{stitchStyleOptions.map((option)=>(<button key={option.value} onClick={()=>handleInputChange('stitchStyle',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.stitchStyle===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
-<div className="font-bold">{option.label}</div></button>))}</div></div>)}
-{mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Finished Panel</label>
-<div className="grid grid-cols-2 gap-2">{getPanelOptions().map((option)=>(<button key={option.value} onClick={()=>handleInputChange('panelWidth',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.panelWidth===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
-<div className="text-xs opacity-80">{option.label}</div><div className="font-bold">{\`\${option.value}" Width\`}</div></button>))}</div></div>)}
-{mode!=='roman'&&(<div><label className="block text-amber-400 text-sm font-medium mb-3">Lining</label>
-<div className="grid grid-cols-2 gap-2">{liningOptions.map((option)=>(<button key={option.value} onClick={()=>handleInputChange('lining',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.lining===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
-<div className="font-bold text-xs">{option.label}</div></button>))}</div></div>)}
-<div><label className="block text-amber-400 text-sm font-medium mb-2">Price per Meter (₹) *</label>
-<input type="number" step="0.01" value={inputs.pricePerMeter} onChange={(e)=>handleInputChange('pricePerMeter',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.pricePerMeter?'border-red-500':'border-gray-600'}\`} placeholder="Enter price per meter"/>
-{validationErrors.pricePerMeter&&<p className="mt-1 text-red-400 text-xs">{validationErrors.pricePerMeter}</p>}</div></div>
-<div className="flex gap-3 mt-6"><button onClick={calculateResults} disabled={isCalculateDisabled()} className={\`flex-1 font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-200 transform \${isCalculateDisabled()?'bg-gray-600 text-gray-400 cursor-not-allowed':'bg-gradient-to-r from-amber-400 to-yellow-500 text-black hover:from-amber-500 hover:to-yellow-600 hover:scale-105'}\`}>Calculate & Auto-Save</button>
-<button onClick={resetForm} className="bg-gray-700 text-white font-semibold py-3 px-6 rounded-xl border border-gray-600 hover:bg-gray-600 transition-all duration-200">Reset</button></div>
-{isCalculated&&(<div className="mt-6 p-4 bg-gray-700 bg-opacity-50 rounded-xl border border-gray-600"><h3 className="text-amber-400 font-semibold mb-3 text-center">Results</h3>
-<div className="space-y-3"><div className="flex justify-between items-center"><span className="text-gray-300 text-sm">Number of Panels:</span>
-<span className="text-white font-medium">{results.numberOfPanels}</span></div><div className="flex justify-between items-center">
-<span className="text-gray-300 text-sm">Cloth Required:</span><span className="text-white font-medium">{\`\${results.clothMeters}m\`}</span></div>
-<div className="flex justify-between items-center"><span className="text-gray-300 text-sm">Fabric Cost:</span>
-<span className="text-white font-medium">₹{results.fabricCost}</span></div><div className="flex justify-between items-center">
-<span className="text-gray-300 text-sm">Stitching Cost:</span><span className="text-white font-medium">₹{results.stitchingCost}</span></div>
-{mode!=='roman'&&results.liningCost>0&&(<div className="flex justify-between items-center"><span className="text-gray-300 text-sm">Lining Cost:</span><span className="text-white font-medium">₹{results.liningCost}</span></div>)}
-<div className="flex justify-between items-center border-t border-gray-600 pt-3"><span className="text-amber-400 font-medium">Total Cost:</span>
-<span className="text-amber-400 font-bold text-lg">₹{results.totalCost}</span></div></div>
-<div className="mt-3 text-center"><span className={\`inline-block px-3 py-1 rounded-full text-xs font-medium \${mode==='single'?'bg-blue-600 bg-opacity-20 text-blue-400 border border-blue-500':mode==='double'?'bg-purple-600 bg-opacity-20 text-purple-400 border border-purple-500':'bg-green-600 bg-opacity-20 text-green-400 border border-green-500'}\`}>
-{mode==='single'?\`Single Width - \${subMode}" Panel\`:mode==='double'?'Double Width':'Roman Blind'}</span></div>
-{saveStatus==='saving'&&(<div className="mt-2 p-2 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg text-blue-400 text-sm text-center">💾 Saving...</div>)}
-{saveStatus==='auto-saved'&&(<div className="mt-2 p-2 bg-green-600 bg-opacity-20 border border-green-500 rounded-lg text-green-400 text-sm text-center">✅ Auto-saved!</div>)}
-{saveStatus==='error'&&(<div className="mt-2 p-2 bg-red-600 bg-opacity-20 border border-red-500 rounded-lg text-red-400 text-sm text-center">❌ Failed to save</div>)}</div>)}</div>
-<div className="text-center mt-6 text-gray-500 text-xs"><p>Premium Curtain Solutions</p><p className="mt-1">© 2025 D'Moksha. All rights reserved.</p></div></div></div>);};
+const{useState}=React;
+const CurtainCalculator=()=>{
+  const[mode,setMode]=useState('single');
+  const[subMode,setSubMode]=useState('54');
+  const[inputs,setInputs]=useState({
+    customerName:'',width:'',height:'',
+    stitchStyle:'American Pleat',panelWidth:24,lining:'No Lining',pricePerMeter:'',
+    track:'American',weights:'No'
+  });
+  const[results,setResults]=useState({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});
+  const[hardwareResults,setHardwareResults]=useState({totalFeet:0,numTracks:0,trackSize:0,tracksTotalCost:0,weightsTotalCost:0,totalCost:0});
+  const[saveStatus,setSaveStatus]=useState('');
+  const[isCalculated,setIsCalculated]=useState(false);
+  const[validationErrors,setValidationErrors]=useState({});
+
+  const panelWidthOptions={
+    single54:{
+      'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],
+      'Ripple':[{label:'High Gather',value:22}],
+      'Rod Pocket':[{label:'High Gather',value:22}],
+      'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]
+    },
+    single48:{
+      'American Pleat':[{label:'High Gather',value:22},{label:'Medium Gather',value:24},{label:'Low Gather',value:26}],
+      'Ripple':[{label:'High Gather',value:20}],
+      'Rod Pocket':[{label:'High Gather',value:20}],
+      'Plain Classic':[{label:'High Gather',value:38},{label:'Medium Gather',value:42},{label:'Low Gather',value:46}]
+    },
+    double:{
+      'American Pleat':[{label:'High Gather',value:24},{label:'Medium Gather',value:26},{label:'Low Gather',value:28}],
+      'Ripple':[{label:'High Gather',value:22}],
+      'Rod Pocket':[{label:'High Gather',value:22}],
+      'Plain Classic':[{label:'High Gather',value:40},{label:'Medium Gather',value:44},{label:'Low Gather',value:48}]
+    }
+  };
+
+  const stitchStyleOptions=[
+    {label:'American Pleat',value:'American Pleat',cost:275},
+    {label:'Ripple',value:'Ripple',cost:350},
+    {label:'Rod Pocket',value:'Rod Pocket',cost:300},
+    {label:'Plain Classic',value:'Plain Classic',cost:200}
+  ];
+  const liningOptions=[
+    {label:'No Lining',value:'No Lining',cost:0},
+    {label:'Normal Lining',value:'Normal Lining',cost:250},
+    {label:'80% Blackout Lining',value:'80% Blackout Lining',cost:250},
+    {label:'100% Blackout Lining',value:'100% Blackout Lining',cost:375}
+  ];
+  const trackOptions=[
+    {label:'American',value:'American',cost:250},
+    {label:'Ripple',value:'Ripple',cost:320},
+    {label:'Classic Rod',value:'Classic Rod',cost:250}
+  ];
+  const weightOptions=[
+    {label:'Yes',value:'Yes',cost:170},
+    {label:'No',value:'No',cost:0}
+  ];
+
+  const handleModeSwitch=(newMode)=>{
+    setMode(newMode);
+    if(newMode==='single'){setSubMode('54');}else{setSubMode('');}
+    setIsCalculated(false);setValidationErrors({});setSaveStatus('');
+    if(newMode==='hardware'){
+      setInputs(prev=>({...prev,track:'American',weights:'No'}));
+    } else {
+      const key=newMode==='single'?'single54':'double';
+      if(newMode!=='roman'){
+        const firstOption=panelWidthOptions[key]['American Pleat'][0];
+        setInputs(prev=>({...prev,stitchStyle:'American Pleat',panelWidth:firstOption.value}));
+      }
+    }
+  };
+
+  const handleSubModeSwitch=(newSubMode)=>{
+    setSubMode(newSubMode);setIsCalculated(false);setValidationErrors({});setSaveStatus('');
+    const key=\`single\${newSubMode}\`;
+    const firstOption=panelWidthOptions[key][inputs.stitchStyle][0];
+    setInputs(prev=>({...prev,panelWidth:firstOption.value}));
+  };
+
+  const handleInputChange=(field,value)=>{
+    if(field==='stitchStyle'){
+      const key=mode==='roman'?'':(mode==='single'?\`single\${subMode}\`:'double');
+      if(mode!=='roman'){
+        const firstOption=panelWidthOptions[key][value][0];
+        setInputs(prev=>({...prev,stitchStyle:value,panelWidth:firstOption.value}));
+      }else{setInputs(prev=>({...prev,[field]:value}));}
+    }else{setInputs(prev=>({...prev,[field]:value}));}
+    setIsCalculated(false);setValidationErrors({});setSaveStatus('');
+  };
+
+  const validateInputs=()=>{
+    const errors={};
+    const{width,height,pricePerMeter}=inputs;
+    if(!width||parseFloat(width)<=0){errors.width='Width required and must be >0';}
+    if(!height||parseFloat(height)<=0){errors.height='Height required and must be >0';}
+    if(mode==='double'&&parseFloat(height)>105){errors.height='Height cannot exceed 105" for double width';}
+    if(mode!=='hardware'){
+      if(!pricePerMeter||parseFloat(pricePerMeter)<=0){errors.pricePerMeter='Price per meter required and must be >0';}
+    }
+    setValidationErrors(errors);
+    return Object.keys(errors).length===0;
+  };
+
+  const getStitchStyleCost=(styleName)=>{
+    const style=stitchStyleOptions.find(s=>s.value===styleName);return style?style.cost:250;
+  };
+  const getLiningCost=(liningName)=>{
+    const lining=liningOptions.find(l=>l.value===liningName);return lining?lining.cost:0;
+  };
+  const getTrackCost=(trackName)=>{
+    const track=trackOptions.find(t=>t.value===trackName);return track?track.cost:250;
+  };
+  const getWeightCost=(weightVal)=>{
+    const w=weightOptions.find(opt=>opt.value===weightVal);return w?w.cost:0;
+  };
+
+  const getHardwareTrackInfo=(widthInches)=>{
+    const widthFt=widthInches/12;
+    if(widthFt<=8)  return{totalFeet:8, numTracks:1,trackSize:8};
+    if(widthFt<=10) return{totalFeet:10,numTracks:1,trackSize:10};
+    if(widthFt<=12) return{totalFeet:12,numTracks:1,trackSize:12};
+    if(widthFt<=16) return{totalFeet:16,numTracks:2,trackSize:8};
+    if(widthFt<=20) return{totalFeet:20,numTracks:2,trackSize:10};
+    if(widthFt<=24) return{totalFeet:24,numTracks:2,trackSize:12};
+    return{totalFeet:Math.ceil(widthFt),numTracks:Math.ceil(widthFt/12),trackSize:12};
+  };
+
+  const saveToGoogleSheets=async(calculationResults,isAutoSave=false,hwMode=false,hwData=null)=>{
+    try{
+      setSaveStatus('saving');
+      let dataToSave;
+      if(hwMode&&hwData){
+        dataToSave={
+          customerName:inputs.customerName,
+          mode:'hardware',
+          subMode:\`Track: \${inputs.track} | Weights: \${inputs.weights}\`,
+          width:inputs.width,
+          height:inputs.height,
+          stitchStyle:inputs.track,
+          stitchStyleCost:getTrackCost(inputs.track),
+          panelWidth:hwData.trackSize,
+          lining:inputs.weights==='Yes'?'With Weights':'No Weights',
+          liningCost:hwData.weightsTotalCost,
+          pricePerMeter:0,
+          numberOfPanels:hwData.numTracks,
+          clothMeters:hwData.totalFeet,
+          fabricCost:hwData.tracksTotalCost,
+          stitchingCost:0,
+          totalCost:hwData.totalCost,
+          timestamp:new Date().toISOString()
+        };
+      }else{
+        const stitchStyleCost=mode!=='roman'?getStitchStyleCost(inputs.stitchStyle):0;
+        const liningCost=mode!=='roman'?getLiningCost(inputs.lining):0;
+        dataToSave={
+          customerName:inputs.customerName,mode:mode,
+          subMode:mode==='single'?\`\${subMode}" Panel\`:'',
+          width:inputs.width,height:inputs.height,
+          stitchStyle:mode!=='roman'?inputs.stitchStyle:'N/A',
+          stitchStyleCost:stitchStyleCost,
+          panelWidth:mode==='roman'?50:inputs.panelWidth,
+          lining:mode!=='roman'?inputs.lining:'N/A',
+          liningCost:liningCost,
+          pricePerMeter:inputs.pricePerMeter,
+          numberOfPanels:calculationResults.numberOfPanels,
+          clothMeters:calculationResults.clothMeters,
+          fabricCost:calculationResults.fabricCost,
+          stitchingCost:calculationResults.stitchingCost,
+          totalCost:calculationResults.totalCost,
+          timestamp:new Date().toISOString()
+        };
+      }
+      const response=await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dataToSave)});
+      const result=await response.json();
+      if(response.ok){setSaveStatus(isAutoSave?'auto-saved':'success');setTimeout(()=>setSaveStatus(''),3000);}
+      else{setSaveStatus('error');setTimeout(()=>setSaveStatus(''),3000);}
+    }catch(error){setSaveStatus('error');setTimeout(()=>setSaveStatus(''),3000);}
+  };
+
+  const calculateResults=()=>{
+    if(!validateInputs())return;
+    if(mode==='hardware'){
+      const trackInfo=getHardwareTrackInfo(parseFloat(inputs.width));
+      const trackCost=getTrackCost(inputs.track);
+      const weightCost=getWeightCost(inputs.weights);
+      const tracksTotalCost=parseFloat((trackCost*trackInfo.totalFeet).toFixed(2));
+      const weightsTotalCost=parseFloat((weightCost*trackInfo.numTracks).toFixed(2));
+      const totalCost=parseFloat((tracksTotalCost+weightsTotalCost).toFixed(2));
+      const hwData={
+        totalFeet:trackInfo.totalFeet,
+        numTracks:trackInfo.numTracks,
+        trackSize:trackInfo.trackSize,
+        tracksTotalCost,weightsTotalCost,totalCost
+      };
+      setHardwareResults(hwData);
+      setIsCalculated(true);
+      saveToGoogleSheets(null,true,true,hwData);
+      return;
+    }
+    const{width,height,panelWidth,pricePerMeter,stitchStyle,lining}=inputs;
+    let numberOfPanels,clothRequiredMeters,stitchingCost=0;
+    if(mode==='roman'){
+      const panelWidthRoman=50;
+      numberOfPanels=Math.ceil(parseFloat(width)/panelWidthRoman);
+      const extraHeight=20;const extraCloth=10;
+      clothRequiredMeters=((parseFloat(height)+extraHeight)*numberOfPanels+extraCloth)*(2.54/100);
+      stitchingCost=((parseFloat(width)/12)*(parseFloat(height)/12))*175;
+    }else if(mode==='single'){
+      const extraWidth=(6/50)*parseFloat(width);
+      const adjustedWidth=parseFloat(width)+extraWidth;
+      numberOfPanels=Math.ceil(adjustedWidth/panelWidth);
+      clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
+      const stitchStyleCost=getStitchStyleCost(stitchStyle);
+      stitchingCost=stitchStyleCost*numberOfPanels;
+    }else{
+      const extraWidth=(6/50)*parseFloat(width);
+      const adjustedWidth=parseFloat(width)+extraWidth;
+      numberOfPanels=Math.ceil(adjustedWidth/panelWidth);
+      const finalWidth=adjustedWidth*54/panelWidth;
+      clothRequiredMeters=finalWidth*(2.54/100);
+      const stitchStyleCost=getStitchStyleCost(stitchStyle);
+      stitchingCost=stitchStyleCost*numberOfPanels;
+    }
+    const roundedClothMeters=parseFloat(clothRequiredMeters.toFixed(1));
+    const fabricCost=parseFloat((roundedClothMeters*parseFloat(pricePerMeter)).toFixed(2));
+    stitchingCost=parseFloat(stitchingCost.toFixed(2));
+    const liningCost=mode!=='roman'?parseFloat((getLiningCost(lining)*numberOfPanels).toFixed(2)):0;
+    const totalCost=parseFloat((fabricCost+stitchingCost+liningCost).toFixed(2));
+    const calculationResults={numberOfPanels,clothMeters:roundedClothMeters,fabricCost,stitchingCost,liningCost,totalCost};
+    setResults(calculationResults);setIsCalculated(true);
+    saveToGoogleSheets(calculationResults,true,false,null);
+  };
+
+  const resetForm=()=>{
+    if(mode==='hardware'){
+      setInputs(prev=>({...prev,customerName:'',width:'',height:'',track:'American',weights:'No'}));
+      setHardwareResults({totalFeet:0,numTracks:0,trackSize:0,tracksTotalCost:0,weightsTotalCost:0,totalCost:0});
+    }else{
+      const key=mode==='roman'?'':(mode==='single'?\`single\${subMode}\`:'double');
+      const firstPanelWidth=mode==='roman'?50:panelWidthOptions[key]['American Pleat'][0].value;
+      setInputs({customerName:'',width:'',height:'',stitchStyle:'American Pleat',panelWidth:firstPanelWidth,lining:'No Lining',pricePerMeter:'',track:'American',weights:'No'});
+      setResults({numberOfPanels:0,clothMeters:0,fabricCost:0,stitchingCost:0,liningCost:0,totalCost:0});
+    }
+    setIsCalculated(false);setSaveStatus('');setValidationErrors({});
+  };
+
+  const isCalculateDisabled=()=>{
+    const{width,height,pricePerMeter}=inputs;
+    if(mode==='hardware'){
+      return !width||!height||Object.keys(validationErrors).length>0;
+    }
+    return !width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>105)||Object.keys(validationErrors).length>0;
+  };
+
+  const getPanelOptions=()=>{
+    if(mode==='roman'||mode==='hardware')return[];
+    const key=mode==='single'?\`single\${subMode}\`:'double';
+    return panelWidthOptions[key][inputs.stitchStyle]||[];
+  };
+
+  return(
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black px-4 py-6">
+      <div className="max-w-md mx-auto">
+        <div className="text-center mb-8">
+          <img src="/images/logo.png" alt="D'Moksha Logo" className="h-20 mx-auto mb-4" onError={(e)=>{e.target.style.display='none';document.getElementById('fallback-title').style.display='block';}}/>
+          <h1 id="fallback-title" className="text-3xl font-bold text-white mb-2" style={{display:'none'}}>D'Moksha</h1>
+          <p className="text-amber-400 text-sm font-medium tracking-wide">Express yourself. Choose goodness</p>
+          <p className="text-gray-400 text-xs mt-1">Pricing Calculator</p>
+          <div className="w-20 h-0.5 bg-gradient-to-r from-amber-400 to-yellow-500 mx-auto mt-2"></div>
+        </div>
+
+        <div className="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-gray-700">
+
+          {/* Mode Switcher */}
+          <div className="mb-6">
+            <div className="grid grid-cols-4 bg-gray-700 rounded-xl p-1 gap-1">
+              <button onClick={()=>handleModeSwitch('single')} className={\`py-2 px-2 rounded-lg text-xs font-medium transition-all duration-300 \${mode==='single'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>Single Width</button>
+              <button onClick={()=>handleModeSwitch('double')} className={\`py-2 px-2 rounded-lg text-xs font-medium transition-all duration-300 \${mode==='double'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>Double Width</button>
+              <button onClick={()=>handleModeSwitch('roman')} className={\`py-2 px-2 rounded-lg text-xs font-medium transition-all duration-300 \${mode==='roman'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>Roman Blind</button>
+              <button onClick={()=>handleModeSwitch('hardware')} className={\`py-2 px-2 rounded-lg text-xs font-medium transition-all duration-300 \${mode==='hardware'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>Hardware</button>
+            </div>
+          </div>
+
+          {/* Single Width Sub Mode */}
+          {mode==='single'&&(
+            <div className="mb-6">
+              <div className="flex bg-gray-700 rounded-xl p-1">
+                <button onClick={()=>handleSubModeSwitch('54')} className={\`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 \${subMode==='54'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>54" Panel</button>
+                <button onClick={()=>handleSubModeSwitch('48')} className={\`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 \${subMode==='48'?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'text-gray-300 hover:text-white'}\`}>48" Panel</button>
+              </div>
+            </div>
+          )}
+
+          <h2 className="text-xl font-semibold text-white mb-6 text-center">
+            {mode==='single'?\`Single Width - \${subMode}" Panel\`:mode==='double'?'Double Width':mode==='roman'?'Roman Blind':'Hardware'} Calculator
+          </h2>
+
+          <div className="space-y-5">
+
+            {/* Customer Name */}
+            <div>
+              <label className="block text-amber-400 text-sm font-medium mb-2">Customer Name</label>
+              <input type="text" value={inputs.customerName} onChange={(e)=>handleInputChange('customerName',e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200" placeholder="Enter customer name"/>
+            </div>
+
+            {/* Width */}
+            <div>
+              <label className="block text-amber-400 text-sm font-medium mb-2">Width (inches) *</label>
+              <input type="number" value={inputs.width} onChange={(e)=>handleInputChange('width',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.width?'border-red-500':'border-gray-600'}\`} placeholder="Enter width"/>
+              {validationErrors.width&&<p className="mt-1 text-red-400 text-xs">{validationErrors.width}</p>}
+            </div>
+
+            {/* Height */}
+            <div>
+              <label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) * {mode==='double'&&<span className="text-red-400">(Max: 105")</span>}</label>
+              <input type="number" value={inputs.height} onChange={(e)=>handleInputChange('height',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.height?'border-red-500':'border-gray-600'}\`} placeholder="Enter height" max={mode==='double'?105:undefined}/>
+              {validationErrors.height&&<p className="mt-1 text-red-400 text-xs">{validationErrors.height}</p>}
+            </div>
+
+            {/* HARDWARE SPECIFIC FIELDS */}
+            {mode==='hardware'&&(
+              <>
+                {/* Track Selection */}
+                <div>
+                  <label className="block text-amber-400 text-sm font-medium mb-3">Tracks</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {trackOptions.map((option)=>(
+                      <button key={option.value} onClick={()=>handleInputChange('track',option.value)} className={\`py-3 px-2 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.track===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
+                        <div className="font-bold text-xs">{option.label}</div>
+                        <div className="text-xs opacity-75 mt-1">₹{option.cost}/ft</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Weights Selection */}
+                <div>
+                  <label className="block text-amber-400 text-sm font-medium mb-3">Weights</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {weightOptions.map((option)=>(
+                      <button key={option.value} onClick={()=>handleInputChange('weights',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.weights===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
+                        <div className="font-bold">{option.value}</div>
+                        <div className="text-xs opacity-75 mt-1">{option.cost>0?\`₹\${option.cost}/track\`:'Free'}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* NON-HARDWARE FIELDS */}
+            {mode!=='roman'&&mode!=='hardware'&&(
+              <div>
+                <label className="block text-amber-400 text-sm font-medium mb-3">Stitch Style</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {stitchStyleOptions.map((option)=>(
+                    <button key={option.value} onClick={()=>handleInputChange('stitchStyle',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.stitchStyle===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
+                      <div className="font-bold">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {mode!=='roman'&&mode!=='hardware'&&(
+              <div>
+                <label className="block text-amber-400 text-sm font-medium mb-3">Finished Panel</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {getPanelOptions().map((option)=>(
+                    <button key={option.value} onClick={()=>handleInputChange('panelWidth',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.panelWidth===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
+                      <div className="text-xs opacity-80">{option.label}</div>
+                      <div className="font-bold">{\`\${option.value}" Width\`}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {mode!=='roman'&&mode!=='hardware'&&(
+              <div>
+                <label className="block text-amber-400 text-sm font-medium mb-3">Lining</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {liningOptions.map((option)=>(
+                    <button key={option.value} onClick={()=>handleInputChange('lining',option.value)} className={\`py-3 px-3 rounded-xl font-medium transition-all duration-200 text-sm \${inputs.lining===option.value?'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg':'bg-gray-700 text-white border border-gray-600 hover:bg-gray-600'}\`}>
+                      <div className="font-bold text-xs">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Price per Meter - only for non-hardware */}
+            {mode!=='hardware'&&(
+              <div>
+                <label className="block text-amber-400 text-sm font-medium mb-2">Price per Meter (₹) *</label>
+                <input type="number" step="0.01" value={inputs.pricePerMeter} onChange={(e)=>handleInputChange('pricePerMeter',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.pricePerMeter?'border-red-500':'border-gray-600'}\`} placeholder="Enter price per meter"/>
+                {validationErrors.pricePerMeter&&<p className="mt-1 text-red-400 text-xs">{validationErrors.pricePerMeter}</p>}
+              </div>
+            )}
+
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-6">
+            <button onClick={calculateResults} disabled={isCalculateDisabled()} className={\`flex-1 font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-200 transform \${isCalculateDisabled()?'bg-gray-600 text-gray-400 cursor-not-allowed':'bg-gradient-to-r from-amber-400 to-yellow-500 text-black hover:from-amber-500 hover:to-yellow-600 hover:scale-105'}\`}>
+              Calculate &amp; Auto-Save
+            </button>
+            <button onClick={resetForm} className="bg-gray-700 text-white font-semibold py-3 px-6 rounded-xl border border-gray-600 hover:bg-gray-600 transition-all duration-200">Reset</button>
+          </div>
+
+          {/* HARDWARE RESULTS */}
+          {isCalculated&&mode==='hardware'&&(
+            <div className="mt-6 p-4 bg-gray-700 bg-opacity-50 rounded-xl border border-gray-600">
+              <h3 className="text-amber-400 font-semibold mb-3 text-center">Hardware Results</h3>
+
+              {/* Track Info Banner */}
+              <div className="mb-4 p-3 bg-gray-600 bg-opacity-50 rounded-lg border border-gray-500 text-center">
+                <p className="text-white font-bold text-lg">
+                  {hardwareResults.numTracks} × {hardwareResults.trackSize}ft Track{hardwareResults.numTracks>1?'s':''}
+                </p>
+                <p className="text-gray-300 text-sm mt-1">
+                  {hardwareResults.numTracks} {hardwareResults.trackSize}ft {inputs.track} track{hardwareResults.numTracks>1?'s':''} required
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Total Feet Required:</span>
+                  <span className="text-white font-medium">{hardwareResults.totalFeet} ft</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Number of Tracks:</span>
+                  <span className="text-white font-medium">{hardwareResults.numTracks}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Track Specification:</span>
+                  <span className="text-white font-medium">{hardwareResults.numTracks} × {hardwareResults.trackSize}ft</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Track Type:</span>
+                  <span className="text-white font-medium">{inputs.track}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Track Cost:</span>
+                  <span className="text-white font-medium">₹{hardwareResults.tracksTotalCost}</span>
+                </div>
+                {inputs.weights==='Yes'&&(
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300 text-sm">Weights Cost:</span>
+                    <span className="text-white font-medium">₹{hardwareResults.weightsTotalCost}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center border-t border-gray-600 pt-3">
+                  <span className="text-amber-400 font-medium">Total Cost:</span>
+                  <span className="text-amber-400 font-bold text-lg">₹{hardwareResults.totalCost}</span>
+                </div>
+              </div>
+
+              <div className="mt-3 text-center">
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-orange-600 bg-opacity-20 text-orange-400 border border-orange-500">
+                  Hardware — {inputs.track} Track
+                </span>
+              </div>
+
+              {saveStatus==='saving'&&(<div className="mt-2 p-2 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg text-blue-400 text-sm text-center">💾 Saving...</div>)}
+              {saveStatus==='auto-saved'&&(<div className="mt-2 p-2 bg-green-600 bg-opacity-20 border border-green-500 rounded-lg text-green-400 text-sm text-center">✅ Auto-saved!</div>)}
+              {saveStatus==='error'&&(<div className="mt-2 p-2 bg-red-600 bg-opacity-20 border border-red-500 rounded-lg text-red-400 text-sm text-center">❌ Failed to save</div>)}
+            </div>
+          )}
+
+          {/* CURTAIN RESULTS (non-hardware) */}
+          {isCalculated&&mode!=='hardware'&&(
+            <div className="mt-6 p-4 bg-gray-700 bg-opacity-50 rounded-xl border border-gray-600">
+              <h3 className="text-amber-400 font-semibold mb-3 text-center">Results</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Number of Panels:</span>
+                  <span className="text-white font-medium">{results.numberOfPanels}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Cloth Required:</span>
+                  <span className="text-white font-medium">{\`\${results.clothMeters}m\`}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Fabric Cost:</span>
+                  <span className="text-white font-medium">₹{results.fabricCost}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-sm">Stitching Cost:</span>
+                  <span className="text-white font-medium">₹{results.stitchingCost}</span>
+                </div>
+                {mode!=='roman'&&results.liningCost>0&&(
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300 text-sm">Lining Cost:</span>
+                    <span className="text-white font-medium">₹{results.liningCost}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center border-t border-gray-600 pt-3">
+                  <span className="text-amber-400 font-medium">Total Cost:</span>
+                  <span className="text-amber-400 font-bold text-lg">₹{results.totalCost}</span>
+                </div>
+              </div>
+              <div className="mt-3 text-center">
+                <span className={\`inline-block px-3 py-1 rounded-full text-xs font-medium \${mode==='single'?'bg-blue-600 bg-opacity-20 text-blue-400 border border-blue-500':mode==='double'?'bg-purple-600 bg-opacity-20 text-purple-400 border border-purple-500':'bg-green-600 bg-opacity-20 text-green-400 border border-green-500'}\`}>
+                  {mode==='single'?\`Single Width - \${subMode}" Panel\`:mode==='double'?'Double Width':'Roman Blind'}
+                </span>
+              </div>
+              {saveStatus==='saving'&&(<div className="mt-2 p-2 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg text-blue-400 text-sm text-center">💾 Saving...</div>)}
+              {saveStatus==='auto-saved'&&(<div className="mt-2 p-2 bg-green-600 bg-opacity-20 border border-green-500 rounded-lg text-green-400 text-sm text-center">✅ Auto-saved!</div>)}
+              {saveStatus==='error'&&(<div className="mt-2 p-2 bg-red-600 bg-opacity-20 border border-red-500 rounded-lg text-red-400 text-sm text-center">❌ Failed to save</div>)}
+            </div>
+          )}
+
+        </div>
+        <div className="text-center mt-6 text-gray-500 text-xs">
+          <p>Premium Curtain Solutions</p>
+          <p className="mt-1">© 2025 D'Moksha. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 ReactDOM.render(React.createElement(CurtainCalculator),document.getElementById('root'));
 </script></body></html>`);
 });
@@ -295,11 +734,9 @@ async function startServer() {
     console.log(`📊 Spreadsheet: https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}`);
     console.log(`🌐 Calculator: http://localhost:${PORT}`);
     console.log(`🖼️  Logo: http://localhost:${PORT}/images/logo.png`);
-    console.log('🎯 Features: Single Width (54"/48"), Double Width, Roman Blind');
+    console.log('🎯 Features: Single Width (54"/48"), Double Width, Roman Blind, Hardware');
   });
 }
 
 startServer();
 module.exports = app;
-
-
