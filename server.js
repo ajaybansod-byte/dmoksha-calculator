@@ -416,6 +416,14 @@ const CurtainCalculator=()=>{
     }catch(error){setSaveStatus('error');setTimeout(()=>setSaveStatus(''),3000);}
   };
 
+  // Custom panel rounding: decimal <= 0.15 rounds DOWN, > 0.15 rounds UP
+  // e.g. 3.01, 3.10, 3.15 → 3 | 3.16, 3.5, 3.9 → 4
+  const smartRoundPanels=(value)=>{
+    const floor=Math.floor(value);
+    const decimal=parseFloat((value-floor).toFixed(10));
+    return decimal<=0.15?floor:floor+1;
+  };
+
   const calculateResults=()=>{
     if(!validateInputs())return;
     if(mode==='hardware'){
@@ -442,21 +450,21 @@ const CurtainCalculator=()=>{
     let numberOfPanels,clothRequiredMeters,stitchingCost=0;
     if(mode==='roman'){
       const panelWidthRoman=50;
-      numberOfPanels=Math.ceil(parseFloat(width)/panelWidthRoman);
+      numberOfPanels=smartRoundPanels(parseFloat(width)/panelWidthRoman);
       const extraHeight=20;const extraCloth=10;
       clothRequiredMeters=((parseFloat(height)+extraHeight)*numberOfPanels+extraCloth)*(2.54/100);
       stitchingCost=((parseFloat(width)/12)*(parseFloat(height)/12))*175;
     }else if(mode==='single'){
       const extraWidth=(6/50)*parseFloat(width);
       const adjustedWidth=parseFloat(width)+extraWidth;
-      numberOfPanels=Math.ceil(adjustedWidth/panelWidth);
+      numberOfPanels=smartRoundPanels(adjustedWidth/panelWidth);
       clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
       const stitchStyleCost=getStitchStyleCost(stitchStyle);
       stitchingCost=stitchStyleCost*numberOfPanels;
     }else{
       const extraWidth=(6/50)*parseFloat(width);
       const adjustedWidth=parseFloat(width)+extraWidth;
-      numberOfPanels=Math.ceil(adjustedWidth/panelWidth);
+      numberOfPanels=smartRoundPanels(adjustedWidth/panelWidth);
       const finalWidth=adjustedWidth*54/panelWidth;
       clothRequiredMeters=finalWidth*(2.54/100);
       const stitchStyleCost=getStitchStyleCost(stitchStyle);
