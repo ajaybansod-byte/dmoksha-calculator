@@ -488,7 +488,7 @@ const CurtainCalculator=()=>{
         // Step 5 — Total Cloth Width per Panel
         const totalClothWidthPerPanel=8.5+(n*x)+((n-1)*y);
         // Step 6 — Number of Panels (ceiling)
-        numberOfPanels=Math.ceil((totalClothWidthPerPanel/54)*2);
+        numberOfPanels=smartRoundPanels((totalClothWidthPerPanel/54)*2);
         // Cloth required uses standard formula with new numberOfPanels
         clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
         const stitchStyleCost=getStitchStyleCost(stitchStyle);
