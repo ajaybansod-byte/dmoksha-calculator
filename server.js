@@ -455,12 +455,53 @@ const CurtainCalculator=()=>{
       clothRequiredMeters=((parseFloat(height)+extraHeight)*numberOfPanels+extraCloth)*(2.54/100);
       stitchingCost=((parseFloat(width)/12)*(parseFloat(height)/12))*175;
     }else if(mode==='single'){
-      const extraWidth=(6/50)*parseFloat(width);
-      const adjustedWidth=parseFloat(width)+extraWidth;
-      numberOfPanels=smartRoundPanels(adjustedWidth/panelWidth);
-      clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
-      const stitchStyleCost=getStitchStyleCost(stitchStyle);
-      stitchingCost=stitchStyleCost*numberOfPanels;
+      // --- Single Width 54" + American Pleat + High or Medium Gather ---
+      // Uses new ripple-based panel calculation
+      // High Gather:   x=6,   y in [5.0, 5.5]  (panelWidth=24)
+      // Medium Gather: x=5.5, y in [5.5, 6.0]  (panelWidth=26)
+      // Low Gather:    old smartRoundPanels      (panelWidth=28)
+      const isNewCalc=(subMode==='54'&&stitchStyle==='American Pleat'&&(panelWidth===24||panelWidth===26));
+      if(isNewCalc){
+        // Step 1 — Finished Width per Panel (ceiling to whole inch)
+        const fwp=Math.ceil(parseFloat(width)*1.12/2);
+        // Step 2 — Target drives n
+        const target=fwp-6;
+        // Step 3 — Gather config
+        const x=panelWidth===24?6:5.5;
+        const yMin=panelWidth===24?5.0:5.5;
+        const yMax=panelWidth===24?5.5:6.0;
+        // Step 4 — Iterate n until y lands in valid range
+        // n_min: smallest n where y <= yMax  (y = target/(n-1) <= yMax → n-1 >= target/yMax)
+        // n_max: largest n where y >= yMin   (y = target/(n-1) >= yMin → n-1 <= target/yMin)
+        const nMin=Math.max(2,Math.ceil(target/yMax+1));
+        const nMax=Math.floor(target/yMin+1);
+        let n,y;
+        if(nMin<=nMax){
+          // Valid n exists — use smallest valid n for most efficient cloth use
+          n=nMin;
+          y=target/(n-1);
+        }else{
+          // No valid n — use nMin as best approximation (y will be slightly above yMax)
+          n=nMin;
+          y=target/(n-1);
+        }
+        // Step 5 — Total Cloth Width per Panel
+        const totalClothWidthPerPanel=8.5+(n*x)+((n-1)*y);
+        // Step 6 — Number of Panels (ceiling)
+        numberOfPanels=Math.ceil((totalClothWidthPerPanel/54)*2);
+        // Cloth required uses standard formula with new numberOfPanels
+        clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
+        const stitchStyleCost=getStitchStyleCost(stitchStyle);
+        stitchingCost=stitchStyleCost*numberOfPanels;
+      }else{
+        // All other single width cases — old smartRoundPanels logic
+        const extraWidth=(6/50)*parseFloat(width);
+        const adjustedWidth=parseFloat(width)+extraWidth;
+        numberOfPanels=smartRoundPanels(adjustedWidth/panelWidth);
+        clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
+        const stitchStyleCost=getStitchStyleCost(stitchStyle);
+        stitchingCost=stitchStyleCost*numberOfPanels;
+      }
     }else{
       const extraWidth=(6/50)*parseFloat(width);
       const adjustedWidth=parseFloat(width)+extraWidth;
