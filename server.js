@@ -488,7 +488,14 @@ const CurtainCalculator=()=>{
         // Step 5 — Total Cloth Width per Panel
         const totalClothWidthPerPanel=8.5+(n*x)+((n-1)*y);
         // Step 6 — Number of Panels (ceiling)
-        numberOfPanels=smartRoundPanels((totalClothWidthPerPanel/54)*2);
+        // New panel rounding rule:
+        // ratio = ClothWidth/Panel / 54
+        // if decimal of ratio > 0.5  -> (floor(ratio)+1) x 2  (always even)
+        // if decimal of ratio <= 0.5 -> Math.ceil(ratio x 2)
+        const ratio=totalClothWidthPerPanel/54;
+        const ratioFloor=Math.floor(ratio);
+        const ratioDecimal=parseFloat((ratio-ratioFloor).toFixed(10));
+        numberOfPanels=ratioDecimal>0.5?(ratioFloor+1)*2:Math.ceil(ratio*2);
         // Cloth required uses standard formula with new numberOfPanels
         clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
         const stitchStyleCost=getStitchStyleCost(stitchStyle);
