@@ -85,7 +85,7 @@ const OperationsCalc = () => {
       const target = fwp - 6;
       const nMin = Math.max(2, Math.ceil(target / yMax + 1));
       const n = nMin;
-      const y = target / (n - 1);
+      const y = Math.ceil((target / (n - 1)) * 10) / 10; // ceiling to 1 decimal
       clothWidthPerPanel = 8.5 + (n * x) + ((n - 1) * y);
     } else {
       clothWidthPerPanel = w * (1 + 6 / 50);
