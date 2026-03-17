@@ -17,7 +17,7 @@ const { useState } = React;
 const OperationsCalc = () => {
   const [panelType, setPanelType] = useState('54');
   const [inputs, setInputs] = useState({
-    customerName: '', width: '', height: '', installationDate: '',
+    customerName: '', width: '', height: '', installationDate: '', room: '',
     mainEnabled: 'No', mainFabric: '',
     sheerEnabled: 'No', sheerFabric: '',
     liningEnabled: 'No', liningFabric: '',
@@ -147,6 +147,7 @@ const OperationsCalc = () => {
       const payload = {
         customerName: inputs.customerName, width: inputs.width, height: inputs.height,
         installationDate: inputs.installationDate,
+        room: inputs.room,
         panelType: panelType + '" Panel',
         mainFabric:   inputs.mainEnabled   === 'Yes' ? inputs.mainFabric   : 'No',
         sheerFabric:  inputs.sheerEnabled  === 'Yes' ? inputs.sheerFabric  : 'No',
@@ -176,6 +177,7 @@ const OperationsCalc = () => {
     });
 
     const fabricRows = [
+      inputs.room          ? '<tr><td style="padding:8px 14px;font-size:11px;font-weight:600;color:#555;text-transform:uppercase;border-bottom:1px solid #eee;width:38%">Room</td><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#1A1A2E;border-bottom:1px solid #eee">' + inputs.room + '</td></tr>' : '',
       inputs.mainEnabled   === 'Yes' ? '<tr><td style="padding:8px 14px;font-size:11px;font-weight:600;color:#555;text-transform:uppercase;border-bottom:1px solid #eee;width:38%">Main Fabric</td><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#1A1A2E;border-bottom:1px solid #eee">' + inputs.mainFabric + '</td></tr>' : '',
       inputs.sheerEnabled  === 'Yes' ? '<tr><td style="padding:8px 14px;font-size:11px;font-weight:600;color:#555;text-transform:uppercase;border-bottom:1px solid #eee">Sheer Fabric</td><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#1A1A2E;border-bottom:1px solid #eee">' + inputs.sheerFabric + '</td></tr>' : '',
       inputs.liningEnabled === 'Yes' ? '<tr><td style="padding:8px 14px;font-size:11px;font-weight:600;color:#555;text-transform:uppercase">Lining Fabric</td><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#1A1A2E">' + inputs.liningFabric + '</td></tr>' : ''
@@ -294,7 +296,7 @@ const OperationsCalc = () => {
   const reset = () => {
     setPanelType('54');
     setInputs({
-      customerName: '', width: '', height: '', installationDate: '',
+      customerName: '', width: '', height: '', installationDate: '', room: '',
       mainEnabled: 'No', mainFabric: '', sheerEnabled: 'No', sheerFabric: '',
       liningEnabled: 'No', liningFabric: '', stitchingStyle: 'American Pleat', gatherStyle: 'High'
     });
@@ -359,6 +361,14 @@ const OperationsCalc = () => {
                 onChange={e => handleChange('installationDate', e.target.value)}
                 className={"w-full bg-gray-700 border rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-400 " + (errors.installationDate ? 'border-red-500' : 'border-gray-600')} />
               {errors.installationDate && <p className="mt-1 text-red-400 text-xs">{errors.installationDate}</p>}
+            </div>
+
+            <div>
+              <label className="block text-amber-400 text-sm font-medium mb-2">Room</label>
+              <input type="text" value={inputs.room}
+                onChange={e => handleChange('room', e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                placeholder="e.g. Living Room, Master Bedroom" />
             </div>
 
             <div>
@@ -461,6 +471,41 @@ const OperationsCalc = () => {
                   <p className="text-amber-400 text-xs font-semibold uppercase tracking-widest mb-1">Customer</p>
                   <p className="text-white text-xl font-bold">{inputs.customerName}</p>
                 </div>
+
+                {/* Shared Fabric Information block */}
+                {(inputs.room || inputs.mainEnabled === 'Yes' || inputs.sheerEnabled === 'Yes' || inputs.liningEnabled === 'Yes') && (
+                  <div className="mb-4 rounded-xl overflow-hidden border border-gray-600">
+                    <div className="bg-gray-900 px-4 py-2">
+                      <span className="text-amber-400 text-xs font-bold uppercase tracking-widest">Fabric Information</span>
+                    </div>
+                    <div className="divide-y divide-gray-600">
+                      {inputs.room && (
+                        <div className="flex justify-between items-center px-4 py-2">
+                          <span className="text-gray-400 text-xs uppercase tracking-wide font-semibold">Room</span>
+                          <span className="text-white font-semibold text-sm">{inputs.room}</span>
+                        </div>
+                      )}
+                      {inputs.mainEnabled === 'Yes' && (
+                        <div className="flex justify-between items-center px-4 py-2">
+                          <span className="text-gray-400 text-xs uppercase tracking-wide font-semibold">Main Fabric</span>
+                          <span className="text-white font-semibold text-sm">{inputs.mainFabric || '—'}</span>
+                        </div>
+                      )}
+                      {inputs.sheerEnabled === 'Yes' && (
+                        <div className="flex justify-between items-center px-4 py-2">
+                          <span className="text-gray-400 text-xs uppercase tracking-wide font-semibold">Sheer Fabric</span>
+                          <span className="text-white font-semibold text-sm">{inputs.sheerFabric || '—'}</span>
+                        </div>
+                      )}
+                      {inputs.liningEnabled === 'Yes' && (
+                        <div className="flex justify-between items-center px-4 py-2">
+                          <span className="text-gray-400 text-xs uppercase tracking-wide font-semibold">Lining Fabric</span>
+                          <span className="text-white font-semibold text-sm">{inputs.liningFabric || '—'}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* CUTTER OUTPUT */}
                 {activeTab === 'cutter' && (
