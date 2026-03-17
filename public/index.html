@@ -181,57 +181,109 @@ const OperationsCalc = () => {
       inputs.liningEnabled === 'Yes' ? '<tr><td style="padding:8px 14px;font-size:11px;font-weight:600;color:#555;text-transform:uppercase">Lining Fabric</td><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#1A1A2E">' + inputs.liningFabric + '</td></tr>' : ''
     ].filter(Boolean).join('');
 
+    // Shared reusable blocks
+    const pageHeader = (title) =>
+        '<div style="background:#1A1A2E;padding:20px 32px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<div><div style="color:#F0A500;font-size:20px;font-weight:900;letter-spacing:2px;">D\'MOKSHA HOMES</div>'
+      + '<div style="color:#888;font-size:10px;margin-top:3px;letter-spacing:3px;">EXPRESS YOURSELF. CHOOSE GOODNESS.</div></div>'
+      + '<div style="text-align:right;"><div style="color:#F0A500;font-size:12px;font-weight:700;letter-spacing:1px;">' + title + '</div>'
+      + '<div style="color:#888;font-size:10px;margin-top:3px;">Generated: ' + genDate + '</div></div></div>'
+      + '<div style="height:4px;background:linear-gradient(to right,#F0A500,#FFD700,#F0A500);"></div>';
+
+    const customerBanner =
+        '<div style="background:#F0A500;padding:14px 32px;">'
+      + '<div style="font-size:10px;color:#1A1A2E;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Customer</div>'
+      + '<div style="font-size:26px;font-weight:900;color:#1A1A2E;margin-top:2px;">' + inputs.customerName + '</div></div>';
+
     const cards = [
       ['Width', inputs.width + '"'], ['Height', inputs.height + '"'],
       ['Installation Date', instDate], ['Panel Type', panelType + '" Panel'],
       ['Stitching Style', inputs.stitchingStyle], ['Gather Style', results.gatherLabel]
     ].map(([l, v]) =>
-      '<div style="background:#F8F9FA;border-radius:8px;padding:12px 14px;border-left:3px solid #F0A500;">'
-      + '<div style="font-size:9px;color:#888;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">' + l + '</div>'
-      + '<div style="font-size:13px;font-weight:700;color:#1A1A2E">' + v + '</div></div>'
+      '<div style="background:#F8F9FA;border-radius:8px;padding:10px 12px;border-left:3px solid #F0A500;">'
+      + '<div style="font-size:9px;color:#888;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">' + l + '</div>'
+      + '<div style="font-size:12px;font-weight:700;color:#1A1A2E">' + v + '</div></div>'
     ).join('');
 
-    const lpColor = results.lastPanelWidth === 'None' ? '#999' : '#1A1A2E';
+    const detailGrid = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">' + cards + '</div>';
 
-    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
-      + '<title>Cutting Sheet - ' + inputs.customerName + '</title>'
-      + '<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;background:#fff;}'
-      + '@media print{@page{margin:0;size:A4;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style>'
-      + '</head><body>'
-      + '<div style="background:#1A1A2E;padding:22px 32px;display:flex;justify-content:space-between;align-items:center;">'
-      + '<div><div style="color:#F0A500;font-size:22px;font-weight:900;letter-spacing:2px;">D\'MOKSHA HOMES</div>'
-      + '<div style="color:#888;font-size:10px;margin-top:4px;letter-spacing:3px;">EXPRESS YOURSELF. CHOOSE GOODNESS.</div></div>'
-      + '<div style="text-align:right;"><div style="color:#F0A500;font-size:13px;font-weight:700;">CUTTING INSTRUCTION SHEET</div>'
-      + '<div style="color:#888;font-size:10px;margin-top:4px;">Generated: ' + genDate + '</div></div></div>'
-      + '<div style="height:4px;background:linear-gradient(to right,#F0A500,#FFD700,#F0A500);"></div>'
-      + '<div style="background:#F0A500;padding:16px 32px;">'
-      + '<div style="font-size:10px;color:#1A1A2E;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Customer</div>'
-      + '<div style="font-size:28px;font-weight:900;color:#1A1A2E;margin-top:3px;">' + inputs.customerName + '</div></div>'
-      + '<div style="padding:24px 32px;">'
-      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;">' + cards + '</div>'
-      + (fabricRows ? '<div style="margin-bottom:22px;border-radius:8px;overflow:hidden;border:1px solid #BDD7EE;">'
-        + '<div style="background:#2D4A6B;padding:10px 14px;"><span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;">FABRIC INFORMATION</span></div>'
-        + '<table style="width:100%;border-collapse:collapse;">' + fabricRows + '</table></div>' : '')
-      + '<div style="border-radius:8px;overflow:hidden;border:1px solid #E0E0E0;">'
-      + '<div style="background:#2D4A6B;padding:10px 14px;"><span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;">CUTTING INSTRUCTIONS</span></div>'
+    const fabricBlock = fabricRows
+      ? '<div style="margin-bottom:18px;border-radius:8px;overflow:hidden;border:1px solid #BDD7EE;">'
+        + '<div style="background:#2D4A6B;padding:8px 14px;"><span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;">FABRIC INFORMATION</span></div>'
+        + '<table style="width:100%;border-collapse:collapse;">' + fabricRows + '</table></div>'
+      : '';
+
+    const footer =
+        '<div style="background:#1A1A2E;padding:12px 32px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<div style="color:#F0A500;font-size:11px;font-weight:700;">D\'Moksha Homes — Operations Division</div>'
+      + '<div style="color:#555;font-size:10px;">Confidential — Internal Use Only</div></div>';
+
+    // PAGE 1: CUTTER
+    const lpColor = results.lastPanelWidth === 'None' ? '#999' : '#1A1A2E';
+    const cutterTable =
+        '<div style="border-radius:8px;overflow:hidden;border:1px solid #E0E0E0;">'
+      + '<div style="background:#2D4A6B;padding:8px 14px;"><span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;">CUTTING INSTRUCTIONS</span></div>'
       + '<table style="width:100%;border-collapse:collapse;">'
       + '<thead><tr style="background:#F0A500;">'
-      + '<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">PANEL</th>'
-      + '<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">NO. OF PANELS</th>'
-      + '<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">CUT LENGTH / PANEL</th>'
-      + '<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">LAST PANEL WIDTH</th>'
-      + '<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">FINAL OUTPUT</th>'
+      + '<th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">PANEL</th>'
+      + '<th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">NO. OF PANELS</th>'
+      + '<th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">CUT LENGTH / PANEL</th>'
+      + '<th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">LAST PANEL WIDTH</th>'
+      + '<th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;">FINAL OUTPUT</th>'
       + '</tr></thead><tbody><tr>'
-      + '<td style="padding:16px 14px;font-weight:700;font-size:14px;color:#1A1A2E;border-bottom:2px solid #F0A500;">' + panelType + '" Panel</td>'
-      + '<td style="padding:16px 14px;font-weight:900;font-size:28px;color:#2D4A6B;border-bottom:2px solid #F0A500;">' + results.numberOfPanels + '</td>'
-      + '<td style="padding:16px 14px;font-weight:700;font-size:14px;color:#1A1A2E;border-bottom:2px solid #F0A500;">' + results.cutLength + '"</td>'
-      + '<td style="padding:16px 14px;font-weight:700;font-size:14px;color:' + lpColor + ';border-bottom:2px solid #F0A500;">' + results.lastPanelWidth + '</td>'
-      + '<td style="padding:16px 14px;font-weight:700;font-size:14px;color:#2D4A6B;border-bottom:2px solid #F0A500;">' + results.finalOutput + '</td>'
-      + '</tr></tbody></table></div></div>'
-      + '<div style="background:#1A1A2E;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;margin-top:16px;">'
-      + '<div style="color:#F0A500;font-size:11px;font-weight:700;">D\'Moksha Homes — Operations Division</div>'
-      + '<div style="color:#555;font-size:10px;">Confidential — Internal Use Only</div></div>'
-      + '<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<' + '/script>'
+      + '<td style="padding:14px 12px;font-weight:700;font-size:13px;color:#1A1A2E;border-bottom:2px solid #F0A500;">' + panelType + '" Panel</td>'
+      + '<td style="padding:14px 12px;font-weight:900;font-size:26px;color:#2D4A6B;border-bottom:2px solid #F0A500;">' + results.numberOfPanels + '</td>'
+      + '<td style="padding:14px 12px;font-weight:700;font-size:13px;color:#1A1A2E;border-bottom:2px solid #F0A500;">' + results.cutLength + '"</td>'
+      + '<td style="padding:14px 12px;font-weight:700;font-size:13px;color:' + lpColor + ';border-bottom:2px solid #F0A500;">' + results.lastPanelWidth + '</td>'
+      + '<td style="padding:14px 12px;font-weight:700;font-size:13px;color:#2D4A6B;border-bottom:2px solid #F0A500;">' + results.finalOutput + '</td>'
+      + '</tr></tbody></table></div>';
+
+    const cutterPage =
+        '<div style="page-break-after:always;">'
+      + pageHeader('CUTTING INSTRUCTION SHEET')
+      + customerBanner
+      + '<div style="padding:20px 32px;">' + detailGrid + fabricBlock + cutterTable + '</div>'
+      + footer
+      + '</div>';
+
+    // PAGE 2: TAILOR
+    const tailorRows = [
+      ['Joints (per side)',  results.joints,                                              '#2D4A6B'],
+      ['Border',             '1.25" (2)',                                                 '#1A1A2E'],
+      ['First & Last Flat',  '3" (2)',                                                    '#1A1A2E'],
+      ['Ripple Count',       results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN),'#1A1A2E'],
+      ['Ripple',             results.rippleX === 'N/A' ? 'N/A' : results.rippleX + '"',  '#1A1A2E'],
+      ['Ripple Gap',         results.rippleY === 'N/A' ? 'N/A' : results.rippleY + '"',  '#1A1A2E'],
+      ['Final Height',       results.finalHeight + '"',                                   '#1A1A2E'],
+      ['Hemming',            '10"',                                                       '#1A1A2E'],
+    ].map(([lbl, val, color], i) =>
+      '<tr style="background:' + (i % 2 === 0 ? '#F8F9FA' : '#fff') + ';">'
+      + '<td style="padding:14px 20px;font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #eee;width:40%">' + lbl + '</td>'
+      + '<td style="padding:14px 20px;font-size:16px;font-weight:700;color:' + color + ';border-bottom:1px solid #eee;">' + val + '</td>'
+      + '</tr>'
+    ).join('');
+
+    const tailorTable =
+        '<div style="border-radius:8px;overflow:hidden;border:1px solid #E0E0E0;">'
+      + '<div style="background:#2D4A6B;padding:8px 14px;"><span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;">TAILOR INSTRUCTIONS</span></div>'
+      + '<table style="width:100%;border-collapse:collapse;">' + tailorRows + '</table></div>';
+
+    const tailorPage =
+        '<div>'
+      + pageHeader('TAILOR INSTRUCTION SHEET')
+      + customerBanner
+      + '<div style="padding:20px 32px;">' + detailGrid + fabricBlock + tailorTable + '</div>'
+      + footer
+      + '</div>';
+
+    const printScript = '<scr' + 'ipt>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/scr' + 'ipt>';
+
+    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+      + '<title>D\'Moksha — ' + inputs.customerName + '</title>'
+      + '<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;background:#fff;}'
+      + '@media print{@page{margin:0;size:A4;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
+      + '</style></head><body>'
+      + cutterPage + tailorPage + printScript
       + '</body></html>';
 
     const win = window.open('', '_blank', 'width=1000,height=750');
@@ -462,7 +514,7 @@ const OperationsCalc = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
-                  Download / Print {activeTab === 'cutter' ? 'Cutting' : 'Tailor'} Sheet
+                  Download / Print Full Sheet (Cutter + Tailor)
                 </button>
               </div>
             </div>
