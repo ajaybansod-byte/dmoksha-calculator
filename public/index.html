@@ -26,6 +26,7 @@ const OperationsCalc = () => {
   const [results, setResults] = useState(null);
   const [saveStatus, setSaveStatus] = useState('');
   const [errors, setErrors] = useState({});
+  const [activeTab, setActiveTab] = useState('cutter');
 
   const gatherOptions = {
     'American Pleat': [
@@ -78,6 +79,9 @@ const OperationsCalc = () => {
 
     let numberOfPanels = 0, clothWidthPerPanel = 0;
 
+    // Ripple values — only for American Pleat High/Medium, else N/A
+    let rippleN = 'N/A', rippleX = 'N/A', rippleY = 'N/A';
+
     if (style === 'American Pleat' && (gather === 'High' || gather === 'Medium')) {
       const x = gather === 'High' ? 6 : 5.5;
       const yMax = gather === 'High' ? 5.5 : 6.0;
@@ -87,6 +91,7 @@ const OperationsCalc = () => {
       const n = nMin;
       const y = Math.ceil((target / (n - 1)) * 10) / 10; // ceiling to 1 decimal
       clothWidthPerPanel = 8.5 + (n * x) + ((n - 1) * y);
+      rippleN = n; rippleX = x; rippleY = y;
     } else {
       clothWidthPerPanel = w * (1 + 6 / 50);
     }
@@ -120,7 +125,18 @@ const OperationsCalc = () => {
       ? (numberOfPanels + ' x 54" panels')
       : (totalFull + ' x 54"  +  2 x ' + lastW + '"');
 
-    const res = { numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label };
+    // Joints string — per side panel breakdown e.g. 54" + 54" + 20"
+    const jointParts = [];
+    for (let i = 0; i < fullPerSide; i++) jointParts.push('54"');
+    if (lastW > 0) jointParts.push(lastW + '"');
+    const joints = jointParts.join(' + ');
+
+    const finalHeight = parseFloat((h - 1).toFixed(2));
+
+    const res = {
+      numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
+      joints, rippleN, rippleX, rippleY, finalHeight
+    };
     setResults(res);
     saveToSheet(res);
   };
@@ -230,7 +246,7 @@ const OperationsCalc = () => {
       mainEnabled: 'No', mainFabric: '', sheerEnabled: 'No', sheerFabric: '',
       liningEnabled: 'No', liningFabric: '', stitchingStyle: 'American Pleat', gatherStyle: 'High'
     });
-    setResults(null); setSaveStatus(''); setErrors({});
+    setResults(null); setSaveStatus(''); setErrors({}); setActiveTab('cutter');
   };
 
   const currentGatherOpts = gatherOptions[inputs.stitchingStyle] || [];
@@ -375,42 +391,80 @@ const OperationsCalc = () => {
           </div>
 
           {results && (
-            <div className="mt-6 p-5 bg-gray-700 bg-opacity-50 rounded-xl border border-amber-400 border-opacity-30">
-              <h3 className="text-amber-400 font-bold mb-4 text-center text-lg tracking-wide uppercase">Cutter Output</h3>
+            <div className="mt-6 rounded-xl border border-amber-400 border-opacity-30 overflow-hidden">
 
-              <div className="mb-4 p-3 bg-amber-400 bg-opacity-10 rounded-xl border border-amber-400 border-opacity-40 text-center">
-                <p className="text-amber-400 text-xs font-semibold uppercase tracking-widest mb-1">Customer</p>
-                <p className="text-white text-xl font-bold">{inputs.customerName}</p>
-              </div>
-
-              <div className="space-y-0">
-                {[
-                  ['Panel', panelType + '" Panel', false, ''],
-                  ['Number of Panels', results.numberOfPanels, true, ''],
-                  ['Cut Length per Panel', results.cutLength + '"', false, ''],
-                  ['Last Panel Width', results.lastPanelWidth, false, ''],
-                  ['Final Output', results.finalOutput, false, 'amber'],
-                ].map(([lbl, val, big, color]) => (
-                  <div key={lbl} className="flex justify-between items-center py-3 border-b border-gray-600">
-                    <span className="text-gray-300 text-sm">{lbl}</span>
-                    <span className={"font-bold " + (big ? 'text-2xl text-white' : color === 'amber' ? 'text-amber-400' : (val === 'None' ? 'text-gray-500' : 'text-white'))}>
-                      {val}
-                    </span>
-                  </div>
+              {/* Tab switcher */}
+              <div className="flex bg-gray-900">
+                {['cutter', 'tailor'].map(tab => (
+                  <button key={tab} onClick={() => setActiveTab(tab)}
+                    className={"flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-all duration-200 " + (activeTab === tab ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black' : 'text-gray-400 hover:text-white')}>
+                    {tab === 'cutter' ? 'Cutter' : 'Tailor'}
+                  </button>
                 ))}
               </div>
 
-              {saveStatus === 'saving' && <div className="mt-3 p-2 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg text-blue-400 text-sm text-center">Saving...</div>}
-              {saveStatus === 'saved'  && <div className="mt-3 p-2 bg-green-600 bg-opacity-20 border border-green-500 rounded-lg text-green-400 text-sm text-center">Saved to sheet!</div>}
-              {saveStatus === 'error'  && <div className="mt-3 p-2 bg-red-600 bg-opacity-20 border border-red-500 rounded-lg text-red-400 text-sm text-center">Failed to save</div>}
+              <div className="p-5 bg-gray-700 bg-opacity-50">
+                {/* Customer name — always visible */}
+                <div className="mb-4 p-3 bg-amber-400 bg-opacity-10 rounded-xl border border-amber-400 border-opacity-40 text-center">
+                  <p className="text-amber-400 text-xs font-semibold uppercase tracking-widest mb-1">Customer</p>
+                  <p className="text-white text-xl font-bold">{inputs.customerName}</p>
+                </div>
 
-              <button onClick={handlePrint}
-                className="w-full mt-4 bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold py-3 px-6 rounded-xl shadow-lg hover:from-amber-500 hover:to-yellow-600 transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                Download / Print Cutting Sheet
-              </button>
+                {/* CUTTER OUTPUT */}
+                {activeTab === 'cutter' && (
+                  <div className="space-y-0">
+                    {[
+                      ['Panel', panelType + '" Panel', false, ''],
+                      ['Number of Panels', results.numberOfPanels, true, ''],
+                      ['Cut Length per Panel', results.cutLength + '"', false, ''],
+                      ['Last Panel Width', results.lastPanelWidth, false, ''],
+                      ['Final Output', results.finalOutput, false, 'amber'],
+                    ].map(([lbl, val, big, color]) => (
+                      <div key={lbl} className="flex justify-between items-center py-3 border-b border-gray-600">
+                        <span className="text-gray-300 text-sm">{lbl}</span>
+                        <span className={"font-bold " + (big ? 'text-2xl text-white' : color === 'amber' ? 'text-amber-400' : (val === 'None' ? 'text-gray-500' : 'text-white'))}>
+                          {val}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* TAILOR OUTPUT */}
+                {activeTab === 'tailor' && (
+                  <div className="space-y-0">
+                    {[
+                      ['Joints', results.joints, false, 'amber'],
+                      ['Border', '1.25" (2)', false, ''],
+                      ['First & Last Flat', '3" (2)', false, ''],
+                      ['Ripple Count', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), false, results.rippleN === 'N/A' ? 'na' : ''],
+                      ['Ripple', results.rippleX === 'N/A' ? 'N/A' : results.rippleX + '"', false, results.rippleX === 'N/A' ? 'na' : ''],
+                      ['Ripple Gap', results.rippleY === 'N/A' ? 'N/A' : results.rippleY + '"', false, results.rippleY === 'N/A' ? 'na' : ''],
+                      ['Final Height', results.finalHeight + '"', false, ''],
+                      ['Hemming', '10"', false, ''],
+                    ].map(([lbl, val, big, color]) => (
+                      <div key={lbl} className="flex justify-between items-center py-3 border-b border-gray-600">
+                        <span className="text-gray-300 text-sm">{lbl}</span>
+                        <span className={"font-bold " + (color === 'amber' ? 'text-amber-400' : color === 'na' ? 'text-gray-500 italic' : 'text-white')}>
+                          {val}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {saveStatus === 'saving' && <div className="mt-3 p-2 bg-blue-600 bg-opacity-20 border border-blue-500 rounded-lg text-blue-400 text-sm text-center">Saving...</div>}
+                {saveStatus === 'saved'  && <div className="mt-3 p-2 bg-green-600 bg-opacity-20 border border-green-500 rounded-lg text-green-400 text-sm text-center">Saved to sheet!</div>}
+                {saveStatus === 'error'  && <div className="mt-3 p-2 bg-red-600 bg-opacity-20 border border-red-500 rounded-lg text-red-400 text-sm text-center">Failed to save</div>}
+
+                <button onClick={handlePrint}
+                  className="w-full mt-4 bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold py-3 px-6 rounded-xl shadow-lg hover:from-amber-500 hover:to-yellow-600 transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Download / Print {activeTab === 'cutter' ? 'Cutting' : 'Tailor'} Sheet
+                </button>
+              </div>
             </div>
           )}
 
