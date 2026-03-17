@@ -57,7 +57,7 @@ try {
 
 const SHEET_HEADERS = [
   'Timestamp', 'Customer Name', 'Width (inches)', 'Height (inches)', 'Installation Date',
-  'Panel Type', 'Main Fabric', 'Sheer Fabric', 'Lining Fabric',
+  'Room', 'Panel Type', 'Main Fabric', 'Sheer Fabric', 'Lining Fabric',
   'Stitching Style', 'Gather Style',
   'Number of Panels', 'Cut Length per Panel (inches)', 'Last Panel Width (inches)', 'Final Output',
   'User IP', 'Browser Info'
@@ -83,10 +83,16 @@ async function initializeGoogleSheets() {
       sheet = await doc.addSheet({ title: 'Cutter Data', headerValues: SHEET_HEADERS });
       console.log('✅ Created new sheet with headers');
     } else {
-      await sheet.loadHeaderRow();
+      // Resize first to ensure enough columns
       if (sheet.columnCount < SHEET_HEADERS.length) {
-        await sheet.resize({ rowCount: sheet.rowCount, columnCount: SHEET_HEADERS.length });
+        await sheet.resize({ rowCount: Math.max(sheet.rowCount, 1), columnCount: SHEET_HEADERS.length });
         console.log(`✅ Resized to ${SHEET_HEADERS.length} columns`);
+      }
+      // Try loadHeaderRow — if it fails (empty sheet), that's fine, setHeaderRow will handle it
+      try {
+        await sheet.loadHeaderRow();
+      } catch (headerErr) {
+        console.log('ℹ️  No existing header row found — will create one');
       }
       await sheet.setHeaderRow(SHEET_HEADERS);
       console.log('✅ Headers pushed successfully');
@@ -112,6 +118,7 @@ async function appendToGoogleSheet(data) {
       'Width (inches)': parseFloat(data.width || 0),
       'Height (inches)': parseFloat(data.height || 0),
       'Installation Date': data.installationDate || '',
+      'Room': data.room || '',
       'Panel Type': data.panelType || '',
       'Main Fabric': data.mainFabric || 'No',
       'Sheer Fabric': data.sheerFabric || 'No',
@@ -135,6 +142,26 @@ async function appendToGoogleSheet(data) {
 }
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', googleSheets: connectionStatus }));
+
+// Force push headers manually — visit /api/push-headers in browser to trigger
+app.get('/api/push-headers', async (req, res) => {
+  try {
+    if (!sheet) {
+      const ok = await initializeGoogleSheets();
+      if (!ok) return res.status(500).json({ error: 'Could not connect to sheet' });
+    }
+    if (sheet.columnCount < SHEET_HEADERS.length) {
+      await sheet.resize({ rowCount: Math.max(sheet.rowCount, 1), columnCount: SHEET_HEADERS.length });
+    }
+    try { await sheet.loadHeaderRow(); } catch (e) { /* empty sheet, ok */ }
+    await sheet.setHeaderRow(SHEET_HEADERS);
+    console.log('✅ Headers force-pushed via /api/push-headers');
+    res.json({ success: true, message: 'Headers pushed successfully', headers: SHEET_HEADERS });
+  } catch (e) {
+    console.error('❌ push-headers error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.post('/api/save', async (req, res) => {
   try {
