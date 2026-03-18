@@ -460,49 +460,46 @@ const CurtainCalculator=()=>{
       // High Gather:   x=6,   y in [5.0, 5.5]  (panelWidth=24)
       // Medium Gather: x=5.5, y in [5.5, 6.0]  (panelWidth=26)
       // Low Gather:    old smartRoundPanels      (panelWidth=28)
-      const isNewCalc=(subMode==='54'&&stitchStyle==='American Pleat'&&(panelWidth===24||panelWidth===26));
+      // isNewCalc: 54" High(pw=24)/Medium(pw=26) OR 48" High(pw=22)/Medium(pw=24) + American Pleat
+      const isNewCalc=(stitchStyle==='American Pleat'&&(
+        (subMode==='54'&&(panelWidth===24||panelWidth===26))||
+        (subMode==='48'&&(panelWidth===22||panelWidth===24))
+      ));
       if(isNewCalc){
+        // Panel size in inches — 54 or 48 based on subMode
+        const panelSize=subMode==='54'?54:48;
+        // Gather type: 54" High=pw24 Med=pw26 | 48" High=pw22 Med=pw24
+        const isHigh=(subMode==='54'&&panelWidth===24)||(subMode==='48'&&panelWidth===22);
         // Step 1 — Finished Width per Panel (ceiling to whole inch)
         const fwp=Math.ceil(parseFloat(width)*1.12/2);
         // Step 2 — Target drives n
         const target=fwp-6;
-        // Step 3 — Gather config
-        const x=panelWidth===24?6:5.5;
-        const yMin=panelWidth===24?5.0:5.5;
-        const yMax=panelWidth===24?5.5:6.0;
-        // Step 4 — Iterate n until y lands in valid range
-        // n_min: smallest n where y <= yMax  (y = target/(n-1) <= yMax → n-1 >= target/yMax)
-        // n_max: largest n where y >= yMin   (y = target/(n-1) >= yMin → n-1 <= target/yMin)
+        // Step 3 — Gather config (same x/y ranges for both 54" and 48")
+        const x=isHigh?6:5.5;
+        const yMin=isHigh?5.0:5.5;
+        const yMax=isHigh?5.5:6.0;
+        // Step 4 — Find n: smallest n where y lands in [yMin, yMax]
         const nMin=Math.max(2,Math.ceil(target/yMax+1));
         const nMax=Math.floor(target/yMin+1);
         let n,y;
-        if(nMin<=nMax){
-          // Valid n exists — use smallest valid n for most efficient cloth use
-          n=nMin;
-          y=target/(n-1);
-        }else{
-          // No valid n — use nMin as best approximation (y will be slightly above yMax)
-          n=nMin;
-          y=target/(n-1);
-        }
+        if(nMin<=nMax){n=nMin;y=target/(n-1);}
+        else{n=nMin;y=target/(n-1);}
+        // Apply ceiling to 1 decimal for tailor-friendly y
+        y=Math.ceil(y*10)/10;
         // Step 5 — Total Cloth Width per Panel (before waste)
         let totalClothWidthPerPanel=8.5+(n*x)+((n-1)*y);
-        // Step 6 — Add waste (same logic as operations calculator)
-        // n_full = full 54" panels per side, x_total = total panels per side
-        const nFull=Math.floor(totalClothWidthPerPanel/54);
-        const lastWInitial=parseFloat((totalClothWidthPerPanel-(nFull*54)).toFixed(2));
+        // Step 6 — Add waste using panelSize (54 or 48)
+        // n_full = full panelSize" panels per side, x_total = total panels per side
+        const nFull=Math.floor(totalClothWidthPerPanel/panelSize);
+        const lastWInitial=parseFloat((totalClothWidthPerPanel-(nFull*panelSize)).toFixed(2));
         const xTotal=lastWInitial>0?nFull+1:nFull;
         const waste=nFull+(xTotal-1)*0.5;
         totalClothWidthPerPanel=parseFloat((totalClothWidthPerPanel+waste).toFixed(2));
-        // Step 7 — Number of Panels using adjusted cloth width
-        // ratio = AdjustedClothWidth / 54
-        // if decimal of ratio > 0.5  -> (floor(ratio)+1) x 2  (always even)
-        // if decimal of ratio <= 0.5 -> Math.ceil(ratio x 2)
-        // if odd -> +1 (last panel always in pair)
-        const ratio=totalClothWidthPerPanel/54;
+        // Step 7 — Number of Panels using adjusted cloth width and panelSize
+        // decimal <= 0.5 → (A*2)+1 (odd) | decimal > 0.5 → (A+1)*2 (even)
+        const ratio=totalClothWidthPerPanel/panelSize;
         const ratioFloor=Math.floor(ratio);
         const ratioDecimal=parseFloat((ratio-ratioFloor).toFixed(10));
-        // decimal <= 0.5 → (A*2)+1 (odd)  |  decimal > 0.5 → (A+1)*2 (even)
         numberOfPanels=ratioDecimal>0.5?(ratioFloor+1)*2:(ratioFloor*2)+1;
         // Cloth required uses standard formula with new numberOfPanels
         clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
