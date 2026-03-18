@@ -96,18 +96,21 @@ const OperationsCalc = () => {
       clothWidthPerPanel = w * (1 + 6 / 50);
     }
 
-    // Step 1: Calculate waste using original clothWidthPerPanel
-    // n_full = full 54" panels per side, x_total = total panels per side
-    const n_full = Math.floor(clothWidthPerPanel / 54);
-    const lastW_initial = parseFloat((clothWidthPerPanel - (n_full * 54)).toFixed(2));
+    // Panel size in inches — driven by panelType toggle (54 or 48)
+    const panelSize = parseInt(panelType);
+
+    // Step 1: Calculate waste using panelSize instead of hardcoded 54
+    // n_full = full panelSize" panels per side, x_total = total panels per side
+    const n_full = Math.floor(clothWidthPerPanel / panelSize);
+    const lastW_initial = parseFloat((clothWidthPerPanel - (n_full * panelSize)).toFixed(2));
     const x_total = lastW_initial > 0 ? n_full + 1 : n_full;
     const waste = n_full + (x_total - 1) * 0.5;
 
     // Step 2: Add waste to get adjusted cloth width
     clothWidthPerPanel = parseFloat((clothWidthPerPanel + waste).toFixed(2));
 
-    // Step 3: Re-calculate numberOfPanels with adjusted cloth width
-    const ratio = clothWidthPerPanel / 54;
+    // Step 3: Re-calculate numberOfPanels with adjusted cloth width and panelSize
+    const ratio = clothWidthPerPanel / panelSize;
     const rf = Math.floor(ratio);
     const rd = parseFloat((ratio - rf).toFixed(10));
     numberOfPanels = rd > 0.5 ? (rf + 1) * 2 : Math.ceil(ratio * 2);
@@ -116,18 +119,18 @@ const OperationsCalc = () => {
     if (numberOfPanels % 2 !== 0) numberOfPanels += 1;
 
     const cutLength = parseFloat((h + 9).toFixed(2));
-    const fullPerSide = Math.floor(clothWidthPerPanel / 54);
-    const lastW = parseFloat((clothWidthPerPanel - (fullPerSide * 54)).toFixed(2));
+    const fullPerSide = Math.floor(clothWidthPerPanel / panelSize);
+    const lastW = parseFloat((clothWidthPerPanel - (fullPerSide * panelSize)).toFixed(2));
     const lastPanelDisplay = lastW <= 0 ? 'None' : lastW + '"';
     const totalFull = fullPerSide * 2;
     // Last panel always comes in pair of 2
     const finalOutput = lastW <= 0
-      ? (numberOfPanels + ' x 54" panels')
-      : (totalFull + ' x 54"  +  2 x ' + lastW + '"');
+      ? (numberOfPanels + ' x ' + panelSize + '" panels')
+      : (totalFull + ' x ' + panelSize + '"  +  2 x ' + lastW + '"');
 
     // Joints string — per side panel breakdown e.g. 54" + 54" + 20"
     const jointParts = [];
-    for (let i = 0; i < fullPerSide; i++) jointParts.push('54"');
+    for (let i = 0; i < fullPerSide; i++) jointParts.push(panelSize + '"');
     if (lastW > 0) jointParts.push(lastW + '"');
     const joints = jointParts.join(' + ');
 
