@@ -505,6 +505,29 @@ const CurtainCalculator=()=>{
         clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
         const stitchStyleCost=getStitchStyleCost(stitchStyle);
         stitchingCost=stitchStyleCost*numberOfPanels;
+      }else if(stitchStyle==='Ripple'){
+        // Ripple stitch — new formula
+        const panelSize=subMode==='54'?54:48;
+        // Step 1 — FWP = (Width + 4) / 2
+        const rFwp=(parseFloat(width)+4)/2;
+        // Step 2 — n = CEILING(FWP / 2)
+        const rN=Math.ceil(rFwp/2);
+        // Step 3 — Total Cloth Width per Panel = n*5 + 2.5
+        let rCloth=rN*5+2.5;
+        // Step 4 — Waste (same as American Pleat)
+        const rNFull=Math.floor(rCloth/panelSize);
+        const rLastWInit=parseFloat((rCloth-(rNFull*panelSize)).toFixed(2));
+        const rXTotal=rLastWInit>0?rNFull+1:rNFull;
+        const rWaste=rNFull+(rXTotal-1)*0.5;
+        rCloth=parseFloat((rCloth+rWaste).toFixed(2));
+        // Step 5 — Number of panels (same ratio rule as American Pleat)
+        const rRatio=rCloth/panelSize;
+        const rRf=Math.floor(rRatio);
+        const rRd=parseFloat((rRatio-rRf).toFixed(10));
+        numberOfPanels=rRd>0.5?(rRf+1)*2:(rRf*2)+1;
+        clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
+        const stitchStyleCost=getStitchStyleCost(stitchStyle);
+        stitchingCost=stitchStyleCost*numberOfPanels;
       }else{
         // All other single width cases — old smartRoundPanels logic
         const extraWidth=(6/50)*parseFloat(width);
@@ -514,8 +537,21 @@ const CurtainCalculator=()=>{
         const stitchStyleCost=getStitchStyleCost(stitchStyle);
         stitchingCost=stitchStyleCost*numberOfPanels;
       }
+    }else if(stitchStyle==='Ripple'){
+      // Double Width Ripple — new formula, ratio/54, numberOfPanels=2
+      const dwrFwp=(parseFloat(width)+4)/2;
+      const dwrN=Math.ceil(dwrFwp/2);
+      const dwrCloth=dwrN*5+2.5;
+      // Number of panels via ratio/54 (double width always uses 54 as divisor)
+      const dwrRatio=dwrCloth/54;
+      const dwrRf=Math.floor(dwrRatio);
+      const dwrRd=parseFloat((dwrRatio-dwrRf).toFixed(10));
+      numberOfPanels=dwrRd>0.5?(dwrRf+1)*2:(dwrRf*2)+1;
+      clothRequiredMeters=parseFloat((2*dwrCloth*(2.54/100)).toFixed(1));
+      const stitchStyleCostDwr=getStitchStyleCost(stitchStyle);
+      stitchingCost=stitchStyleCostDwr*numberOfPanels;
     }else{
-      // Double Width — ripple-based calculation for all gather styles (High, Medium, Low)
+      // Double Width American Pleat — ripple-based calculation for all gather styles
       // Determine gather from panelWidth — same mapping as single width
       // Double: American Pleat High=pw24, Medium=pw26, Low=pw28
       const dwIsHigh=panelWidth===24;
