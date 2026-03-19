@@ -82,8 +82,36 @@ const OperationsCalc = () => {
     let rippleN = 'N/A', rippleX = 'N/A', rippleY = 'N/A';
     let cutLength, lastPanelDisplay, finalOutput, joints, finalHeight;
 
+    if (panelType === 'Double' && style === 'Ripple') {
+      // ── DOUBLE WIDTH RIPPLE ────────────────────────────────────
+      const hGap = parseFloat(inputs.heightGap || '1');
+      const rFwp = (w + 4) / 2;
+      const rN = Math.ceil(rFwp / 2);
+      const rCloth = parseFloat((rN * 5 + 2.5).toFixed(2));
+      clothWidthPerPanel = rCloth;
+      rippleN = rN; rippleX = 5; rippleY = 'N/A';
+      // Number of panels: ratio/54 (double width always /54)
+      const rRatio = rCloth / 54;
+      const rRf = Math.floor(rRatio);
+      const rRd = parseFloat((rRatio - rRf).toFixed(10));
+      numberOfPanels = rRd > 0.5 ? (rRf + 1) * 2 : Math.ceil(rRatio * 2);
+      if (numberOfPanels % 2 !== 0) numberOfPanels += 1;
+      cutLength = rCloth;
+      lastPanelDisplay = 'N/A';
+      finalOutput = rCloth + '" + ' + rCloth + '"';
+      joints = rCloth + '" + ' + rCloth + '"';
+      finalHeight = parseFloat((h - hGap).toFixed(2));
+      const resR = {
+        numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
+        joints, rippleN, rippleX, rippleY, finalHeight, isDoubleWidth: true, isRipple: true
+      };
+      setResults(resR);
+      saveToSheet(resR);
+      return;
+    }
+
     if (panelType === 'Double') {
-      // ── DOUBLE WIDTH ─────────────────────────────────────────
+      // ── DOUBLE WIDTH AMERICAN PLEAT ────────────────────────────
       const hGap = parseFloat(inputs.heightGap || '1');
       // FWP = (Width + 6) / 2
       const dwFwp = (w + 6) / 2;
@@ -126,6 +154,13 @@ const OperationsCalc = () => {
       const y = Math.ceil((target / (n - 1)) * 10) / 10;
       clothWidthPerPanel = 8.5 + (n * x) + ((n - 1) * y);
       rippleN = n; rippleX = x; rippleY = y;
+    } else if (style === 'Ripple') {
+      // Ripple stitch — new formula
+      // FWP = (Width + 4) / 2, n = CEILING(FWP/2), Cloth = n*5 + 2.5
+      const rFwp = (w + 4) / 2;
+      const rN = Math.ceil(rFwp / 2);
+      clothWidthPerPanel = rN * 5 + 2.5;
+      rippleN = rN; rippleX = 5; rippleY = 'N/A';
     } else {
       clothWidthPerPanel = w * (1 + 6 / 50);
     }
@@ -567,16 +602,23 @@ const OperationsCalc = () => {
                 {/* TAILOR OUTPUT */}
                 {activeTab === 'tailor' && (
                   <div className="space-y-0">
-                    {[
-                      ['Joints', results.joints, false, 'amber'],
-                      ['Border', '1.25" (2)', false, ''],
-                      ['First & Last Flat', '3" (2)', false, ''],
-                      ['Ripple Count', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), false, results.rippleN === 'N/A' ? 'na' : ''],
-                      ['Ripple', results.rippleX === 'N/A' ? 'N/A' : results.rippleX + '"', false, results.rippleX === 'N/A' ? 'na' : ''],
-                      ['Ripple Gap', results.rippleY === 'N/A' ? 'N/A' : results.rippleY + '"', false, results.rippleY === 'N/A' ? 'na' : ''],
-                      ['Final Height', results.finalHeight + '"', false, ''],
-                      ['Hemming', '10"', false, ''],
-                    ].map(([lbl, val, big, color]) => (
+                    {(inputs.stitchingStyle === 'Ripple' ? [
+                      ['Joints', results.joints, 'amber'],
+                      ['Border', '1.25" (2)', ''],
+                      ['Number of Ripple kadi', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), results.rippleN === 'N/A' ? 'na' : ''],
+                      ['Ripple kadi', '5"', ''],
+                      ['Final Height', results.finalHeight + '"', ''],
+                      ['Hemming', '10"', ''],
+                    ] : [
+                      ['Joints', results.joints, 'amber'],
+                      ['Border', '1.25" (2)', ''],
+                      ['First & Last Flat', '3" (2)', ''],
+                      ['Ripple Count', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), results.rippleN === 'N/A' ? 'na' : ''],
+                      ['Ripple', results.rippleX === 'N/A' ? 'N/A' : results.rippleX + '"', results.rippleX === 'N/A' ? 'na' : ''],
+                      ['Ripple Gap', results.rippleY === 'N/A' ? 'N/A' : results.rippleY + '"', results.rippleY === 'N/A' ? 'na' : ''],
+                      ['Final Height', results.finalHeight + '"', ''],
+                      ['Hemming', '10"', ''],
+                    ]).map(([lbl, val, color]) => (
                       <div key={lbl} className="flex justify-between items-center py-3 border-b border-gray-600">
                         <span className="text-gray-300 text-sm">{lbl}</span>
                         <span className={"font-bold " + (color === 'amber' ? 'text-amber-400' : color === 'na' ? 'text-gray-500 italic' : 'text-white')}>
