@@ -320,7 +320,7 @@ const CurtainCalculator=()=>{
     const{width,height,pricePerMeter}=inputs;
     if(!width||parseFloat(width)<=0){errors.width='Width required and must be >0';}
     if(!height||parseFloat(height)<=0){errors.height='Height required and must be >0';}
-    if(mode==='double'&&parseFloat(height)>105){errors.height='Height cannot exceed 105" for double width';}
+    if(mode==='double'&&parseFloat(height)>98){errors.height='Height cannot exceed 98" for double width';}
     if(mode==='hardware'){
       if(!inputs.numPanels||parseInt(inputs.numPanels)<=0){errors.numPanels='Number of panels required and must be >0';}
     }
@@ -515,11 +515,31 @@ const CurtainCalculator=()=>{
         stitchingCost=stitchStyleCost*numberOfPanels;
       }
     }else{
-      const extraWidth=(6/50)*parseFloat(width);
-      const adjustedWidth=parseFloat(width)+extraWidth;
-      numberOfPanels=smartRoundPanels(adjustedWidth/panelWidth);
-      const finalWidth=adjustedWidth*54/panelWidth;
-      clothRequiredMeters=finalWidth*(2.54/100);
+      // Double Width — ripple-based calculation for all gather styles (High, Medium, Low)
+      const dwGather=stitchStyle==='American Pleat'?inputs.gatherStyle||'High':'High';
+      const dwIsHigh=dwGather==='High';
+      // Step 1 — FWP for double width: (Width + 6) / 2
+      const dwFwp=(parseFloat(width)+6)/2;
+      // Step 2 — Target
+      const dwTarget=dwFwp-6;
+      // Step 3 — Gather config (same x/y as 54"/48")
+      const dwX=dwIsHigh?6:5.5;
+      const dwYMin=dwIsHigh?5.0:5.5;
+      const dwYMax=dwIsHigh?5.5:6.0;
+      // Step 4 — Find n
+      const dwNMin=Math.max(2,Math.ceil(dwTarget/dwYMax+1));
+      const dwN=dwNMin;
+      // Step 5 — y ceiling to 1 decimal
+      const dwY=Math.ceil((dwTarget/(dwN-1))*10)/10;
+      // Step 6 — Total cloth width per panel
+      const dwClothWidth=8.5+(dwN*dwX)+((dwN-1)*dwY);
+      // Step 7 — Number of panels (ratio / 54, same rule as 54" panel)
+      const dwRatio=dwClothWidth/54;
+      const dwRf=Math.floor(dwRatio);
+      const dwRd=parseFloat((dwRatio-dwRf).toFixed(10));
+      numberOfPanels=dwRd>0.5?(dwRf+1)*2:(dwRf*2)+1;
+      // Step 8 — Cloth required = 2 × ClothWidth × (2.54/100)
+      clothRequiredMeters=parseFloat((2*dwClothWidth*(2.54/100)).toFixed(1));
       const stitchStyleCost=getStitchStyleCost(stitchStyle);
       stitchingCost=stitchStyleCost*numberOfPanels;
     }
@@ -551,7 +571,7 @@ const CurtainCalculator=()=>{
     if(mode==='hardware'){
       return !width||!height||!inputs.numPanels||parseInt(inputs.numPanels)<=0||Object.keys(validationErrors).length>0;
     }
-    return !width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>105)||Object.keys(validationErrors).length>0;
+    return !width||!height||!pricePerMeter||(mode==='double'&&parseFloat(height)>98)||Object.keys(validationErrors).length>0;
   };
 
   const getPanelOptions=()=>{
@@ -614,8 +634,8 @@ const CurtainCalculator=()=>{
 
             {/* Height */}
             <div>
-              <label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) * {mode==='double'&&<span className="text-red-400">(Max: 105")</span>}</label>
-              <input type="number" value={inputs.height} onChange={(e)=>handleInputChange('height',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.height?'border-red-500':'border-gray-600'}\`} placeholder="Enter height" max={mode==='double'?105:undefined}/>
+              <label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) * {mode==='double'&&<span className="text-red-400">(Max: 98")</span>}</label>
+              <input type="number" value={inputs.height} onChange={(e)=>handleInputChange('height',e.target.value)} className={\`w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-200 \${validationErrors.height?'border-red-500':'border-gray-600'}\`} placeholder="Enter height" max={mode==='double'?98:undefined}/>
               {validationErrors.height&&<p className="mt-1 text-red-400 text-xs">{validationErrors.height}</p>}
             </div>
 
