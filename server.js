@@ -451,7 +451,7 @@ const CurtainCalculator=()=>{
     if(mode==='roman'){
       const panelWidthRoman=50;
       numberOfPanels=smartRoundPanels(parseFloat(width)/panelWidthRoman);
-      const extraHeight=20;const extraCloth=10;
+      const extraHeight=10;const extraCloth=10;
       clothRequiredMeters=((parseFloat(height)+extraHeight)*numberOfPanels+extraCloth)*(2.54/100);
       stitchingCost=((parseFloat(width)/12)*(parseFloat(height)/12))*175;
     }else if(mode==='single'){
