@@ -57,6 +57,7 @@ const OperationsCalc = () => {
     if (!inputs.customerName.trim()) e.customerName = 'Required';
     if (!inputs.width || parseFloat(inputs.width) <= 0) e.width = 'Required and must be > 0';
     if (!inputs.height || parseFloat(inputs.height) <= 0) e.height = 'Required and must be > 0';
+    if (panelType === 'Double' && parseFloat(inputs.height) > 98) e.height = 'Height cannot exceed 98" for double width';
     if (!inputs.installationDate) e.installationDate = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -78,10 +79,47 @@ const OperationsCalc = () => {
     const pw = gObj.panelWidth;
 
     let numberOfPanels = 0, clothWidthPerPanel = 0;
-
-    // Ripple values — only for American Pleat High/Medium, else N/A
     let rippleN = 'N/A', rippleX = 'N/A', rippleY = 'N/A';
+    let cutLength, lastPanelDisplay, finalOutput, joints, finalHeight;
 
+    if (panelType === 'Double') {
+      // ── DOUBLE WIDTH ─────────────────────────────────────────
+      // FWP = (Width + 6) / 2
+      const dwFwp = (w + 6) / 2;
+      const dwTarget = dwFwp - 6;
+      const dwIsHigh = gather === 'High';
+      const dwX = dwIsHigh ? 6 : 5.5;
+      const dwYMax = dwIsHigh ? 5.5 : 6.0;
+      const dwN = Math.max(2, Math.ceil(dwTarget / dwYMax + 1));
+      const dwY = Math.ceil((dwTarget / (dwN - 1)) * 10) / 10;
+      clothWidthPerPanel = 8.5 + (dwN * dwX) + ((dwN - 1) * dwY);
+      rippleN = dwN; rippleX = dwX; rippleY = dwY;
+      // Number of panels: ratio / 54, same rule as 54" panel
+      const dwRatio = clothWidthPerPanel / 54;
+      const dwRf = Math.floor(dwRatio);
+      const dwRd = parseFloat((dwRatio - dwRf).toFixed(10));
+      numberOfPanels = dwRd > 0.5 ? (dwRf + 1) * 2 : Math.ceil(dwRatio * 2);
+      if (numberOfPanels % 2 !== 0) numberOfPanels += 1;
+      // Cloth required = 2 × ClothWidth × (2.54/100)
+      const dwClothMeters = parseFloat((2 * clothWidthPerPanel * (2.54 / 100)).toFixed(2));
+      // Cutter output fields
+      cutLength = parseFloat((h + 9).toFixed(2));
+      lastPanelDisplay = 'N/A (Double Width)';
+      finalOutput = dwClothMeters + 'm total cloth';
+      // Joints for tailor — single 108" drop per side (no side-by-side panels)
+      joints = '108" (Double Width)';
+      finalHeight = parseFloat((h - 1).toFixed(2));
+      const res = {
+        numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
+        joints, rippleN, rippleX, rippleY, finalHeight,
+        isDoubleWidth: true, clothMeters: dwClothMeters
+      };
+      setResults(res);
+      saveToSheet(res);
+      return;
+    }
+
+    // ── SINGLE WIDTH (54" or 48") ─────────────────────────────
     if (style === 'American Pleat' && (gather === 'High' || gather === 'Medium')) {
       const x = gather === 'High' ? 6 : 5.5;
       const yMax = gather === 'High' ? 5.5 : 6.0;
@@ -89,52 +127,40 @@ const OperationsCalc = () => {
       const target = fwp - 6;
       const nMin = Math.max(2, Math.ceil(target / yMax + 1));
       const n = nMin;
-      const y = Math.ceil((target / (n - 1)) * 10) / 10; // ceiling to 1 decimal
+      const y = Math.ceil((target / (n - 1)) * 10) / 10;
       clothWidthPerPanel = 8.5 + (n * x) + ((n - 1) * y);
       rippleN = n; rippleX = x; rippleY = y;
     } else {
       clothWidthPerPanel = w * (1 + 6 / 50);
     }
 
-    // Panel size in inches — driven by panelType toggle (54 or 48)
     const panelSize = parseInt(panelType);
-
-    // Step 1: Calculate waste using panelSize instead of hardcoded 54
-    // n_full = full panelSize" panels per side, x_total = total panels per side
     const n_full = Math.floor(clothWidthPerPanel / panelSize);
     const lastW_initial = parseFloat((clothWidthPerPanel - (n_full * panelSize)).toFixed(2));
     const x_total = lastW_initial > 0 ? n_full + 1 : n_full;
     const waste = n_full + (x_total - 1) * 0.5;
-
-    // Step 2: Add waste to get adjusted cloth width
     clothWidthPerPanel = parseFloat((clothWidthPerPanel + waste).toFixed(2));
 
-    // Step 3: Re-calculate numberOfPanels with adjusted cloth width and panelSize
     const ratio = clothWidthPerPanel / panelSize;
     const rf = Math.floor(ratio);
     const rd = parseFloat((ratio - rf).toFixed(10));
     numberOfPanels = rd > 0.5 ? (rf + 1) * 2 : Math.ceil(ratio * 2);
-
-    // Step 4: If odd → round up to next even (last panel always comes in a pair)
     if (numberOfPanels % 2 !== 0) numberOfPanels += 1;
 
-    const cutLength = parseFloat((h + 9).toFixed(2));
+    cutLength = parseFloat((h + 9).toFixed(2));
     const fullPerSide = Math.floor(clothWidthPerPanel / panelSize);
     const lastW = parseFloat((clothWidthPerPanel - (fullPerSide * panelSize)).toFixed(2));
-    const lastPanelDisplay = lastW <= 0 ? 'None' : lastW + '"';
+    lastPanelDisplay = lastW <= 0 ? 'None' : lastW + '"';
     const totalFull = fullPerSide * 2;
-    // Last panel always comes in pair of 2
-    const finalOutput = lastW <= 0
+    finalOutput = lastW <= 0
       ? (numberOfPanels + ' x ' + panelSize + '" panels')
       : (totalFull + ' x ' + panelSize + '"  +  2 x ' + lastW + '"');
 
-    // Joints string — per side panel breakdown e.g. 54" + 54" + 20"
     const jointParts = [];
     for (let i = 0; i < fullPerSide; i++) jointParts.push(panelSize + '"');
     if (lastW > 0) jointParts.push(lastW + '"');
-    const joints = jointParts.join(' + ');
-
-    const finalHeight = parseFloat((h - 1).toFixed(2));
+    joints = jointParts.join(' + ');
+    finalHeight = parseFloat((h - 1).toFixed(2));
 
     const res = {
       numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
@@ -297,7 +323,7 @@ const OperationsCalc = () => {
   };
 
   const reset = () => {
-    setPanelType('54');
+    setPanelType('54'); // reset to default 54"
     setInputs({
       customerName: '', width: '', height: '', installationDate: '', room: '',
       mainEnabled: 'No', mainFabric: '', sheerEnabled: 'No', sheerFabric: '',
@@ -307,7 +333,7 @@ const OperationsCalc = () => {
   };
 
   const currentGatherOpts = gatherOptions[inputs.stitchingStyle] || [];
-  const canCalc = inputs.customerName && inputs.width && inputs.height && inputs.installationDate;
+  const canCalc = inputs.customerName && inputs.width && inputs.height && inputs.installationDate && !(panelType === 'Double' && parseFloat(inputs.height) > 98);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black px-4 py-6">
@@ -349,11 +375,11 @@ const OperationsCalc = () => {
                 {errors.width && <p className="mt-1 text-red-400 text-xs">{errors.width}</p>}
               </div>
               <div>
-                <label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) *</label>
+                <label className="block text-amber-400 text-sm font-medium mb-2">Height (inches) * {panelType === 'Double' && <span className="text-red-400">(Max: 98")</span>}</label>
                 <input type="number" value={inputs.height}
                   onChange={e => handleChange('height', e.target.value)}
                   className={"w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 " + (errors.height ? 'border-red-500' : 'border-gray-600')}
-                  placeholder="Height" />
+                  placeholder="Height" max={panelType === 'Double' ? 98 : undefined} />
                 {errors.height && <p className="mt-1 text-red-400 text-xs">{errors.height}</p>}
               </div>
             </div>
@@ -377,10 +403,10 @@ const OperationsCalc = () => {
             <div>
               <label className="block text-amber-400 text-sm font-medium mb-2">Panel Type</label>
               <div className="flex bg-gray-700 rounded-xl p-1">
-                {['54', '48'].map(pt => (
-                  <button key={pt} onClick={() => { setPanelType(pt); setResults(null); }}
-                    className={"flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 " + (panelType === pt ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg' : 'text-gray-300 hover:text-white')}>
-                    {pt}" Panel
+                {[['54', '54" Panel'], ['48', '48" Panel'], ['Double', 'Double Width']].map(([pt, lbl]) => (
+                  <button key={pt} onClick={() => { setPanelType(pt); setResults(null); setErrors({}); }}
+                    className={"flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all duration-300 " + (panelType === pt ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg' : 'text-gray-300 hover:text-white')}>
+                    {lbl}
                   </button>
                 ))}
               </div>
