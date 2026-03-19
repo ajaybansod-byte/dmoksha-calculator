@@ -516,8 +516,10 @@ const CurtainCalculator=()=>{
       }
     }else{
       // Double Width — ripple-based calculation for all gather styles (High, Medium, Low)
-      const dwGather=stitchStyle==='American Pleat'?inputs.gatherStyle||'High':'High';
-      const dwIsHigh=dwGather==='High';
+      // Determine gather from panelWidth — same mapping as single width
+      // Double: American Pleat High=pw24, Medium=pw26, Low=pw28
+      const dwIsHigh=panelWidth===24;
+      const dwIsMedium=panelWidth===26;
       // Step 1 — FWP for double width: (Width + 6) / 2
       const dwFwp=(parseFloat(width)+6)/2;
       // Step 2 — Target
