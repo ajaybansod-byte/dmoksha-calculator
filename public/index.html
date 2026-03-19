@@ -17,7 +17,7 @@ const { useState } = React;
 const OperationsCalc = () => {
   const [panelType, setPanelType] = useState('54');
   const [inputs, setInputs] = useState({
-    customerName: '', width: '', height: '', installationDate: '', room: '',
+    customerName: '', width: '', height: '', installationDate: '', room: '', heightGap: '1',
     mainEnabled: 'No', mainFabric: '',
     sheerEnabled: 'No', sheerFabric: '',
     liningEnabled: 'No', liningFabric: '',
@@ -84,6 +84,7 @@ const OperationsCalc = () => {
 
     if (panelType === 'Double') {
       // ── DOUBLE WIDTH ─────────────────────────────────────────
+      const hGap = parseFloat(inputs.heightGap || '1');
       // FWP = (Width + 6) / 2
       const dwFwp = (w + 6) / 2;
       const dwTarget = dwFwp - 6;
@@ -92,27 +93,22 @@ const OperationsCalc = () => {
       const dwYMax = dwIsHigh ? 5.5 : 6.0;
       const dwN = Math.max(2, Math.ceil(dwTarget / dwYMax + 1));
       const dwY = Math.ceil((dwTarget / (dwN - 1)) * 10) / 10;
-      clothWidthPerPanel = 8.5 + (dwN * dwX) + ((dwN - 1) * dwY);
+      // Raw cloth width (no waste for double width)
+      const dwRawCloth = parseFloat((8.5 + (dwN * dwX) + ((dwN - 1) * dwY)).toFixed(2));
+      clothWidthPerPanel = dwRawCloth;
       rippleN = dwN; rippleX = dwX; rippleY = dwY;
-      // Number of panels: ratio / 54, same rule as 54" panel
-      const dwRatio = clothWidthPerPanel / 54;
-      const dwRf = Math.floor(dwRatio);
-      const dwRd = parseFloat((dwRatio - dwRf).toFixed(10));
-      numberOfPanels = dwRd > 0.5 ? (dwRf + 1) * 2 : Math.ceil(dwRatio * 2);
-      if (numberOfPanels % 2 !== 0) numberOfPanels += 1;
-      // Cloth required = 2 × ClothWidth × (2.54/100)
-      const dwClothMeters = parseFloat((2 * clothWidthPerPanel * (2.54 / 100)).toFixed(2));
-      // Cutter output fields
-      cutLength = parseFloat((h + 9).toFixed(2));
-      lastPanelDisplay = 'N/A (Double Width)';
-      finalOutput = dwClothMeters + 'm total cloth';
-      // Joints for tailor — single 108" drop per side (no side-by-side panels)
-      joints = '108" (Double Width)';
-      finalHeight = parseFloat((h - 1).toFixed(2));
+      // Cutter: Panel=108", Number of Panels=2, Cut Length=ClothWidth
+      numberOfPanels = 2;
+      cutLength = dwRawCloth;                          // Cut Length per Panel = ClothWidth
+      lastPanelDisplay = 'N/A';
+      finalOutput = dwRawCloth + '" + ' + dwRawCloth + '"'; // written, not summed
+      // Tailor joints — same as final output
+      joints = dwRawCloth + '" + ' + dwRawCloth + '"';
+      finalHeight = parseFloat((h - hGap).toFixed(2)); // Height - Height Gap
       const res = {
         numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
         joints, rippleN, rippleX, rippleY, finalHeight,
-        isDoubleWidth: true, clothMeters: dwClothMeters
+        isDoubleWidth: true
       };
       setResults(res);
       saveToSheet(res);
@@ -160,7 +156,7 @@ const OperationsCalc = () => {
     for (let i = 0; i < fullPerSide; i++) jointParts.push(panelSize + '"');
     if (lastW > 0) jointParts.push(lastW + '"');
     joints = jointParts.join(' + ');
-    finalHeight = parseFloat((h - 1).toFixed(2));
+    finalHeight = parseFloat((h - parseFloat(inputs.heightGap || '1')).toFixed(2));
 
     const res = {
       numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
@@ -325,7 +321,7 @@ const OperationsCalc = () => {
   const reset = () => {
     setPanelType('54'); // reset to default 54"
     setInputs({
-      customerName: '', width: '', height: '', installationDate: '', room: '',
+      customerName: '', width: '', height: '', installationDate: '', room: '', heightGap: '1',
       mainEnabled: 'No', mainFabric: '', sheerEnabled: 'No', sheerFabric: '',
       liningEnabled: 'No', liningFabric: '', stitchingStyle: 'American Pleat', gatherStyle: 'High'
     });
@@ -381,6 +377,18 @@ const OperationsCalc = () => {
                   className={"w-full bg-gray-700 border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 " + (errors.height ? 'border-red-500' : 'border-gray-600')}
                   placeholder="Height" max={panelType === 'Double' ? 98 : undefined} />
                 {errors.height && <p className="mt-1 text-red-400 text-xs">{errors.height}</p>}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-amber-400 text-sm font-medium mb-2">Height Gap</label>
+              <div className="flex bg-gray-700 rounded-xl p-1">
+                {['1', '2'].map(hg => (
+                  <button key={hg} onClick={() => handleChange('heightGap', hg)}
+                    className={"flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 " + (inputs.heightGap === hg ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg' : 'text-gray-300 hover:text-white')}>
+                    {hg}"
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -540,10 +548,10 @@ const OperationsCalc = () => {
                 {activeTab === 'cutter' && (
                   <div className="space-y-0">
                     {[
-                      ['Panel', panelType + '" Panel', false, ''],
+                      ['Panel', panelType === 'Double' ? '108" Panel' : panelType + '" Panel', false, ''],
                       ['Number of Panels', results.numberOfPanels, true, ''],
                       ['Cut Length per Panel', results.cutLength + '"', false, ''],
-                      ['Last Panel Width', results.lastPanelWidth, false, ''],
+                      ...(panelType !== 'Double' ? [['Last Panel Width', results.lastPanelWidth, false, '']] : []),
                       ['Final Output', results.finalOutput, false, 'amber'],
                     ].map(([lbl, val, big, color]) => (
                       <div key={lbl} className="flex justify-between items-center py-3 border-b border-gray-600">
