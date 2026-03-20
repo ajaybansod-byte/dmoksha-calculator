@@ -101,9 +101,10 @@ const OperationsCalc = () => {
       finalOutput = rpCloth + '" + ' + rpCloth + '"';
       joints = rpCloth + '" + ' + rpCloth + '"';
       finalHeight = parseFloat((h - hGap).toFixed(2));
+      const fwpDisplayRP = rpCloth; // TCWPP for Rod Pocket
       const resRP = {
         numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
-        joints, rippleN, rippleX, rippleY, ringCount, finalHeight, isDoubleWidth: true
+        joints, rippleN, rippleX, rippleY, ringCount, finalHeight, isDoubleWidth: true, fwpDisplay: fwpDisplayRP
       };
       setResults(resRP);
       saveToSheet(resRP);
@@ -129,9 +130,10 @@ const OperationsCalc = () => {
       finalOutput = rCloth + '" + ' + rCloth + '"';
       joints = rCloth + '" + ' + rCloth + '"';
       finalHeight = parseFloat((h - hGap).toFixed(2));
+      const fwpDisplayR = rCloth; // TCWPP for Ripple
       const resR = {
         numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
-        joints, rippleN, rippleX, rippleY, ringCount, finalHeight, isDoubleWidth: true, isRipple: true
+        joints, rippleN, rippleX, rippleY, ringCount, finalHeight, isDoubleWidth: true, isRipple: true, fwpDisplay: fwpDisplayR
       };
       setResults(resR);
       saveToSheet(resR);
@@ -161,10 +163,11 @@ const OperationsCalc = () => {
       // Tailor joints — same as final output
       joints = dwRawCloth + '" + ' + dwRawCloth + '"';
       finalHeight = parseFloat((h - hGap).toFixed(2)); // Height - Height Gap
+      const fwpDisplayDW = parseFloat((6 + (dwN - 1) * dwY).toFixed(2));
       const res = {
         numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
         joints, rippleN, rippleX, rippleY, finalHeight,
-        isDoubleWidth: true
+        isDoubleWidth: true, fwpDisplay: fwpDisplayDW
       };
       setResults(res);
       saveToSheet(res);
@@ -172,6 +175,7 @@ const OperationsCalc = () => {
     }
 
     // ── SINGLE WIDTH (54" or 48") ─────────────────────────────
+    let fwpDisplay = 'N/A';
     if (style === 'American Pleat' && (gather === 'High' || gather === 'Medium')) {
       const x = gather === 'High' ? 6 : 5.5;
       const yMax = gather === 'High' ? 5.5 : 6.0;
@@ -182,19 +186,21 @@ const OperationsCalc = () => {
       const y = Math.ceil((target / (n - 1)) * 10) / 10;
       clothWidthPerPanel = 8.5 + (n * x) + ((n - 1) * y);
       rippleN = n; rippleX = x; rippleY = y;
+      fwpDisplay = parseFloat((6 + (n - 1) * y).toFixed(2)); // actual FWP from ripple calc
     } else if (style === 'Ripple') {
       // Ripple stitch — new formula
       const rFwp = (w + 4) / 2;
       const rN = Math.ceil(rFwp / 2);
       clothWidthPerPanel = rN * 5 + 2.5;
       rippleN = rN; rippleX = 5; rippleY = 'N/A';
+      fwpDisplay = parseFloat((rN * 5 + 2.5).toFixed(2)); // TCWPP
     } else if (style === 'Rod Pocket') {
       // Rod Pocket stitch — new formula
-      // FWP = (Width + 6) / 2, n = CEILING(FWP / 2.5), Cloth = n*4.5 + 6.5
       const rpFwp = (w + 6) / 2;
       const rpN = Math.ceil(rpFwp / 2.5);
       clothWidthPerPanel = rpN * 4.5 + 6.5;
       ringCount = rpN;
+      fwpDisplay = parseFloat((rpN * 4.5 + 6.5).toFixed(2)); // TCWPP
     } else {
       clothWidthPerPanel = w * (1 + 6 / 50);
     }
@@ -229,7 +235,7 @@ const OperationsCalc = () => {
 
     const res = {
       numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
-      joints, rippleN, rippleX, rippleY, ringCount, finalHeight
+      joints, rippleN, rippleX, rippleY, ringCount, finalHeight, fwpDisplay
     };
     setResults(res);
     saveToSheet(res);
@@ -639,6 +645,7 @@ const OperationsCalc = () => {
                     {(inputs.stitchingStyle === 'Ripple' ? [
                       ['Joints', results.joints, 'amber'],
                       ['Border', '1.25" (2)', ''],
+                      ['Finish Width per Panel', results.fwpDisplay !== undefined ? results.fwpDisplay + '"' : 'N/A', ''],
                       ['Number of Ripple kadi', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), results.rippleN === 'N/A' ? 'na' : ''],
                       ['Ripple kadi', '5"', ''],
                       ['Final Height', results.finalHeight + '"', ''],
@@ -646,6 +653,7 @@ const OperationsCalc = () => {
                     ] : inputs.stitchingStyle === 'Rod Pocket' ? [
                       ['Joints', results.joints, 'amber'],
                       ['Border', '1.25" (2)', ''],
+                      ['Finish Width per Panel', results.fwpDisplay !== undefined ? results.fwpDisplay + '"' : 'N/A', ''],
                       ['Ring Count', results.ringCount === 'N/A' ? 'N/A' : String(results.ringCount), results.ringCount === 'N/A' ? 'na' : ''],
                       ['Final Height', results.finalHeight + '"', ''],
                       ['Hemming', '10"', ''],
@@ -653,6 +661,7 @@ const OperationsCalc = () => {
                       ['Joints', results.joints, 'amber'],
                       ['Border', '1.25" (2)', ''],
                       ['First & Last Flat', '3" (2)', ''],
+                      ['Finish Width per Panel', results.fwpDisplay !== undefined ? results.fwpDisplay + '"' : 'N/A', ''],
                       ['Ripple Count', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), results.rippleN === 'N/A' ? 'na' : ''],
                       ['Ripple', results.rippleX === 'N/A' ? 'N/A' : results.rippleX + '"', results.rippleX === 'N/A' ? 'na' : ''],
                       ['Ripple Gap', results.rippleY === 'N/A' ? 'N/A' : results.rippleY + '"', results.rippleY === 'N/A' ? 'na' : ''],
