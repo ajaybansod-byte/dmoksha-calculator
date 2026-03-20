@@ -451,7 +451,7 @@ const CurtainCalculator=()=>{
     if(mode==='roman'){
       const panelWidthRoman=50;
       numberOfPanels=smartRoundPanels(parseFloat(width)/panelWidthRoman);
-      const extraHeight=10;const extraCloth=10;
+      const extraHeight=20;const extraCloth=10;
       clothRequiredMeters=((parseFloat(height)+extraHeight)*numberOfPanels+extraCloth)*(2.54/100);
       stitchingCost=((parseFloat(width)/12)*(parseFloat(height)/12))*175;
     }else if(mode==='single'){
@@ -528,6 +528,27 @@ const CurtainCalculator=()=>{
         clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
         const stitchStyleCost=getStitchStyleCost(stitchStyle);
         stitchingCost=stitchStyleCost*numberOfPanels;
+      }else if(stitchStyle==='Rod Pocket'){
+        // Rod Pocket stitch — new formula
+        const panelSizeRP=subMode==='54'?54:48;
+        // FWP = (Width + 6) / 2, n = CEILING(FWP / 2.5), Cloth = n*4.5 + 6.5
+        const rpFwp=(parseFloat(width)+6)/2;
+        const rpN=Math.ceil(rpFwp/2.5);
+        let rpCloth=rpN*4.5+6.5;
+        // Waste step (same as American Pleat)
+        const rpNFull=Math.floor(rpCloth/panelSizeRP);
+        const rpLastWInit=parseFloat((rpCloth-(rpNFull*panelSizeRP)).toFixed(2));
+        const rpXTotal=rpLastWInit>0?rpNFull+1:rpNFull;
+        const rpWaste=rpNFull+(rpXTotal-1)*0.5;
+        rpCloth=parseFloat((rpCloth+rpWaste).toFixed(2));
+        // Number of panels (same ratio rule)
+        const rpRatio=rpCloth/panelSizeRP;
+        const rpRf=Math.floor(rpRatio);
+        const rpRd=parseFloat((rpRatio-rpRf).toFixed(10));
+        numberOfPanels=rpRd>0.5?(rpRf+1)*2:(rpRf*2)+1;
+        clothRequiredMeters=Math.ceil((numberOfPanels*(parseFloat(height)+12)+10))*(2.54/100);
+        const stitchStyleCostRP=getStitchStyleCost(stitchStyle);
+        stitchingCost=stitchStyleCostRP*numberOfPanels;
       }else{
         // All other single width cases — old smartRoundPanels logic
         const extraWidth=(6/50)*parseFloat(width);
@@ -550,6 +571,18 @@ const CurtainCalculator=()=>{
       clothRequiredMeters=parseFloat((2*dwrCloth*(2.54/100)).toFixed(1));
       const stitchStyleCostDwr=getStitchStyleCost(stitchStyle);
       stitchingCost=stitchStyleCostDwr*numberOfPanels;
+    }else if(stitchStyle==='Rod Pocket'){
+      // Double Width Rod Pocket — new formula, ratio/54
+      const dwrpFwp=(parseFloat(width)+6)/2;
+      const dwrpN=Math.ceil(dwrpFwp/2.5);
+      const dwrpCloth=parseFloat((dwrpN*4.5+6.5).toFixed(2));
+      const dwrpRatio=dwrpCloth/54;
+      const dwrpRf=Math.floor(dwrpRatio);
+      const dwrpRd=parseFloat((dwrpRatio-dwrpRf).toFixed(10));
+      numberOfPanels=dwrpRd>0.5?(dwrpRf+1)*2:(dwrpRf*2)+1;
+      clothRequiredMeters=parseFloat((2*dwrpCloth*(2.54/100)).toFixed(1));
+      const stitchStyleCostDwrp=getStitchStyleCost(stitchStyle);
+      stitchingCost=stitchStyleCostDwrp*numberOfPanels;
     }else{
       // Double Width American Pleat — ripple-based calculation for all gather styles
       // Determine gather from panelWidth — same mapping as single width
