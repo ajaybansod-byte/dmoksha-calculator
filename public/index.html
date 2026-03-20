@@ -80,7 +80,35 @@ const OperationsCalc = () => {
 
     let numberOfPanels = 0, clothWidthPerPanel = 0;
     let rippleN = 'N/A', rippleX = 'N/A', rippleY = 'N/A';
+    let ringCount = 'N/A';
     let cutLength, lastPanelDisplay, finalOutput, joints, finalHeight;
+
+    if (panelType === 'Double' && style === 'Rod Pocket') {
+      // ── DOUBLE WIDTH ROD POCKET ───────────────────────────────
+      const hGap = parseFloat(inputs.heightGap || '1');
+      const rpFwp = (w + 6) / 2;
+      const rpN = Math.ceil(rpFwp / 2.5);
+      const rpCloth = parseFloat((rpN * 4.5 + 6.5).toFixed(2));
+      clothWidthPerPanel = rpCloth;
+      ringCount = rpN;
+      const rpRatio = rpCloth / 54;
+      const rpRf = Math.floor(rpRatio);
+      const rpRd = parseFloat((rpRatio - rpRf).toFixed(10));
+      numberOfPanels = rpRd > 0.5 ? (rpRf + 1) * 2 : Math.ceil(rpRatio * 2);
+      if (numberOfPanels % 2 !== 0) numberOfPanels += 1;
+      cutLength = rpCloth;
+      lastPanelDisplay = 'N/A';
+      finalOutput = rpCloth + '" + ' + rpCloth + '"';
+      joints = rpCloth + '" + ' + rpCloth + '"';
+      finalHeight = parseFloat((h - hGap).toFixed(2));
+      const resRP = {
+        numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
+        joints, rippleN, rippleX, rippleY, ringCount, finalHeight, isDoubleWidth: true
+      };
+      setResults(resRP);
+      saveToSheet(resRP);
+      return;
+    }
 
     if (panelType === 'Double' && style === 'Ripple') {
       // ── DOUBLE WIDTH RIPPLE ────────────────────────────────────
@@ -103,7 +131,7 @@ const OperationsCalc = () => {
       finalHeight = parseFloat((h - hGap).toFixed(2));
       const resR = {
         numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
-        joints, rippleN, rippleX, rippleY, finalHeight, isDoubleWidth: true, isRipple: true
+        joints, rippleN, rippleX, rippleY, ringCount, finalHeight, isDoubleWidth: true, isRipple: true
       };
       setResults(resR);
       saveToSheet(resR);
@@ -156,11 +184,17 @@ const OperationsCalc = () => {
       rippleN = n; rippleX = x; rippleY = y;
     } else if (style === 'Ripple') {
       // Ripple stitch — new formula
-      // FWP = (Width + 4) / 2, n = CEILING(FWP/2), Cloth = n*5 + 2.5
       const rFwp = (w + 4) / 2;
       const rN = Math.ceil(rFwp / 2);
       clothWidthPerPanel = rN * 5 + 2.5;
       rippleN = rN; rippleX = 5; rippleY = 'N/A';
+    } else if (style === 'Rod Pocket') {
+      // Rod Pocket stitch — new formula
+      // FWP = (Width + 6) / 2, n = CEILING(FWP / 2.5), Cloth = n*4.5 + 6.5
+      const rpFwp = (w + 6) / 2;
+      const rpN = Math.ceil(rpFwp / 2.5);
+      clothWidthPerPanel = rpN * 4.5 + 6.5;
+      ringCount = rpN;
     } else {
       clothWidthPerPanel = w * (1 + 6 / 50);
     }
@@ -195,7 +229,7 @@ const OperationsCalc = () => {
 
     const res = {
       numberOfPanels, cutLength, lastPanelWidth: lastPanelDisplay, finalOutput, gatherLabel: gObj.label,
-      joints, rippleN, rippleX, rippleY, finalHeight
+      joints, rippleN, rippleX, rippleY, ringCount, finalHeight
     };
     setResults(res);
     saveToSheet(res);
@@ -607,6 +641,12 @@ const OperationsCalc = () => {
                       ['Border', '1.25" (2)', ''],
                       ['Number of Ripple kadi', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), results.rippleN === 'N/A' ? 'na' : ''],
                       ['Ripple kadi', '5"', ''],
+                      ['Final Height', results.finalHeight + '"', ''],
+                      ['Hemming', '10"', ''],
+                    ] : inputs.stitchingStyle === 'Rod Pocket' ? [
+                      ['Joints', results.joints, 'amber'],
+                      ['Border', '1.25" (2)', ''],
+                      ['Ring Count', results.ringCount === 'N/A' ? 'N/A' : String(results.ringCount), results.ringCount === 'N/A' ? 'na' : ''],
                       ['Final Height', results.finalHeight + '"', ''],
                       ['Hemming', '10"', ''],
                     ] : [
