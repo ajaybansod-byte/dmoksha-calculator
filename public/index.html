@@ -17,7 +17,7 @@ const { useState } = React;
 const OperationsCalc = () => {
   const [panelType, setPanelType] = useState('54');
   const [inputs, setInputs] = useState({
-    customerName: '', width: '', height: '', installationDate: '', room: '', heightGap: '1',
+    customerName: '', width: '', height: '', installationDate: '', room: '', heightGap: '1', weights: 'No',
     mainEnabled: 'No', mainFabric: '',
     sheerEnabled: 'No', sheerFabric: '',
     liningEnabled: 'No', liningFabric: '',
@@ -248,6 +248,7 @@ const OperationsCalc = () => {
         customerName: inputs.customerName, width: inputs.width, height: inputs.height,
         installationDate: inputs.installationDate,
         room: inputs.room,
+        weights: inputs.weights,
         panelType: panelType + '" Panel',
         mainFabric:   inputs.mainEnabled   === 'Yes' ? inputs.mainFabric   : 'No',
         sheerFabric:  inputs.sheerEnabled  === 'Yes' ? inputs.sheerFabric  : 'No',
@@ -348,17 +349,42 @@ const OperationsCalc = () => {
       + footer
       + '</div>';
 
-    // PAGE 2: TAILOR
-    const tailorRows = [
-      ['Joints (per side)',  results.joints,                                              '#2D4A6B'],
-      ['Border',             '1.25" (2)',                                                 '#1A1A2E'],
-      ['First & Last Flat',  '3" (2)',                                                    '#1A1A2E'],
-      ['Ripple Count',       results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN),'#1A1A2E'],
-      ['Ripple',             results.rippleX === 'N/A' ? 'N/A' : results.rippleX + '"',  '#1A1A2E'],
-      ['Ripple Gap',         results.rippleY === 'N/A' ? 'N/A' : results.rippleY + '"',  '#1A1A2E'],
-      ['Final Height',       results.finalHeight + '"',                                   '#1A1A2E'],
-      ['Hemming',            '10"',                                                       '#1A1A2E'],
-    ].map(([lbl, val, color], i) =>
+    // PAGE 2: TAILOR — style-aware rows
+    const isRippleStyle = inputs.stitchingStyle === 'Ripple';
+    const isRPStyle = inputs.stitchingStyle === 'Rod Pocket';
+    const fwpRow = results.fwpDisplay !== undefined
+      ? [['Finish Width per Panel', results.fwpDisplay + '"', '#1A1A2E']]
+      : [];
+    const tailorFieldsBase = isRippleStyle ? [
+      ['Joints (per side)',      results.joints,                                               '#2D4A6B'],
+      ['Weights',                inputs.weights,                                               '#1A1A2E'],
+      ['Border',                 '1.25" (2)',                                                  '#1A1A2E'],
+      ...fwpRow,
+      ['Number of Ripple kadi',  results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), '#1A1A2E'],
+      ['Ripple kadi',            '5"',                                                         '#1A1A2E'],
+      ['Final Height',           results.finalHeight + '"',                                    '#1A1A2E'],
+      ['Hemming',                '10"',                                                        '#1A1A2E'],
+    ] : isRPStyle ? [
+      ['Joints (per side)',      results.joints,                                               '#2D4A6B'],
+      ['Weights',                inputs.weights,                                               '#1A1A2E'],
+      ['Border',                 '1.25" (2)',                                                  '#1A1A2E'],
+      ...fwpRow,
+      ['Ring Count',             results.ringCount === 'N/A' ? 'N/A' : String(results.ringCount), '#1A1A2E'],
+      ['Final Height',           results.finalHeight + '"',                                    '#1A1A2E'],
+      ['Hemming',                '10"',                                                        '#1A1A2E'],
+    ] : [
+      ['Joints (per side)',      results.joints,                                               '#2D4A6B'],
+      ['Weights',                inputs.weights,                                               '#1A1A2E'],
+      ['Border',                 '1.25" (2)',                                                  '#1A1A2E'],
+      ['First & Last Flat',      '3" (2)',                                                     '#1A1A2E'],
+      ...fwpRow,
+      ['Ripple Count',           results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), '#1A1A2E'],
+      ['Ripple',                 results.rippleX === 'N/A' ? 'N/A' : results.rippleX + '"',   '#1A1A2E'],
+      ['Ripple Gap',             results.rippleY === 'N/A' ? 'N/A' : results.rippleY + '"',   '#1A1A2E'],
+      ['Final Height',           results.finalHeight + '"',                                    '#1A1A2E'],
+      ['Hemming',                '10"',                                                        '#1A1A2E'],
+    ];
+    const tailorRows = tailorFieldsBase.map(([lbl, val, color], i) =>
       '<tr style="background:' + (i % 2 === 0 ? '#F8F9FA' : '#fff') + ';">'
       + '<td style="padding:14px 20px;font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #eee;width:40%">' + lbl + '</td>'
       + '<td style="padding:14px 20px;font-size:16px;font-weight:700;color:' + color + ';border-bottom:1px solid #eee;">' + val + '</td>'
@@ -371,22 +397,57 @@ const OperationsCalc = () => {
       + '<table style="width:100%;border-collapse:collapse;">' + tailorRows + '</table></div>';
 
     const tailorPage =
-        '<div>'
+        '<div style="page-break-after:always;">'
       + pageHeader('TAILOR INSTRUCTION SHEET')
       + customerBanner
       + '<div style="padding:20px 32px;">' + detailGrid + fabricBlock + tailorTable + '</div>'
       + footer
       + '</div>';
 
+    // PAGE 3: PRODUCTION TRACKING SHEET
+    const processes = [
+      '1. Fabric Allotment','2. Cutting','3. Stitching','4. Marking',
+      '5. After Marking Stitching','6. Taki','7. TC','8. QC',
+      '9. Final QC','10. Ironing','11. Folding','12. Packing'
+    ];
+    const trackingRows = processes.map((p, i) =>
+      '<tr style="background:' + (i % 2 === 0 ? '#F8F9FA' : '#fff') + ';">'
+      + '<td style="padding:13px 16px;font-size:12px;font-weight:600;color:#1A1A2E;border-bottom:1px solid #E0E0E0;">' + p + '</td>'
+      + '<td style="padding:13px 16px;border-bottom:1px solid #E0E0E0;border-left:1px solid #E0E0E0;"></td>'
+      + '<td style="padding:13px 16px;border-bottom:1px solid #E0E0E0;border-left:1px solid #E0E0E0;"></td>'
+      + '<td style="padding:13px 16px;border-bottom:1px solid #E0E0E0;border-left:1px solid #E0E0E0;"></td>'
+      + '</tr>'
+    ).join('');
+
+    const trackingTable =
+        '<div style="border-radius:8px;overflow:hidden;border:1px solid #E0E0E0;">'
+      + '<div style="background:#2D4A6B;padding:8px 14px;"><span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;">PRODUCTION TRACKING</span></div>'
+      + '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">'
+      + '<thead><tr style="background:#F0A500;">'
+      + '<th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;width:34%;">PROCESS</th>'
+      + '<th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;width:22%;border-left:1px solid rgba(255,255,255,0.4);">DATE</th>'
+      + '<th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;width:22%;border-left:1px solid rgba(255,255,255,0.4);">NAME</th>'
+      + '<th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:700;color:#1A1A2E;width:22%;border-left:1px solid rgba(255,255,255,0.4);">SIGNATURE</th>'
+      + '</tr></thead><tbody>' + trackingRows + '</tbody></table></div>';
+
+    const trackingPage =
+        '<div>'
+      + pageHeader('PRODUCTION TRACKING SHEET')
+      + customerBanner
+      + '<div style="padding:20px 32px;">' + detailGrid + trackingTable + '</div>'
+      + footer
+      + '</div>';
+
     const printScript = '<scr' + 'ipt>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/scr' + 'ipt>';
 
     const html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
-      + '<title>D\'Moksha — ' + inputs.customerName + '</title>'
+      + '<title>D\'Moksha \u2014 ' + inputs.customerName + '</title>'
       + '<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;background:#fff;}'
       + '@media print{@page{margin:0;size:A4;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
       + '</style></head><body>'
-      + cutterPage + tailorPage + printScript
+      + cutterPage + tailorPage + trackingPage + printScript
       + '</body></html>';
+
 
     const win = window.open('', '_blank', 'width=1000,height=750');
     win.document.write(html);
@@ -396,7 +457,7 @@ const OperationsCalc = () => {
   const reset = () => {
     setPanelType('54'); // reset to default 54"
     setInputs({
-      customerName: '', width: '', height: '', installationDate: '', room: '', heightGap: '1',
+      customerName: '', width: '', height: '', installationDate: '', room: '', heightGap: '1', weights: 'No',
       mainEnabled: 'No', mainFabric: '', sheerEnabled: 'No', sheerFabric: '',
       liningEnabled: 'No', liningFabric: '', stitchingStyle: 'American Pleat', gatherStyle: 'High'
     });
@@ -462,6 +523,18 @@ const OperationsCalc = () => {
                   <button key={hg} onClick={() => handleChange('heightGap', hg)}
                     className={"flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 " + (inputs.heightGap === hg ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg' : 'text-gray-300 hover:text-white')}>
                     {hg}"
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-amber-400 text-sm font-medium mb-2">Weights</label>
+              <div className="flex bg-gray-700 rounded-xl p-1">
+                {['Yes', 'No'].map(opt => (
+                  <button key={opt} onClick={() => handleChange('weights', opt)}
+                    className={"flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 " + (inputs.weights === opt ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-lg' : 'text-gray-300 hover:text-white')}>
+                    {opt}
                   </button>
                 ))}
               </div>
@@ -624,6 +697,7 @@ const OperationsCalc = () => {
                   <div className="space-y-0">
                     {[
                       ['Panel', panelType === 'Double' ? '108" Panel' : panelType + '" Panel', false, ''],
+                      ['Weights', inputs.weights, false, ''],
                       ['Number of Panels', results.numberOfPanels, true, ''],
                       ['Cut Length per Panel', results.cutLength + '"', false, ''],
                       ...(panelType !== 'Double' ? [['Last Panel Width', results.lastPanelWidth, false, '']] : []),
@@ -644,6 +718,7 @@ const OperationsCalc = () => {
                   <div className="space-y-0">
                     {(inputs.stitchingStyle === 'Ripple' ? [
                       ['Joints', results.joints, 'amber'],
+                      ['Weights', inputs.weights, ''],
                       ['Border', '1.25" (2)', ''],
                       ['Finish Width per Panel', results.fwpDisplay !== undefined ? results.fwpDisplay + '"' : 'N/A', ''],
                       ['Number of Ripple kadi', results.rippleN === 'N/A' ? 'N/A' : String(results.rippleN), results.rippleN === 'N/A' ? 'na' : ''],
@@ -652,6 +727,7 @@ const OperationsCalc = () => {
                       ['Hemming', '10"', ''],
                     ] : inputs.stitchingStyle === 'Rod Pocket' ? [
                       ['Joints', results.joints, 'amber'],
+                      ['Weights', inputs.weights, ''],
                       ['Border', '1.25" (2)', ''],
                       ['Finish Width per Panel', results.fwpDisplay !== undefined ? results.fwpDisplay + '"' : 'N/A', ''],
                       ['Ring Count', results.ringCount === 'N/A' ? 'N/A' : String(results.ringCount), results.ringCount === 'N/A' ? 'na' : ''],
@@ -659,6 +735,7 @@ const OperationsCalc = () => {
                       ['Hemming', '10"', ''],
                     ] : [
                       ['Joints', results.joints, 'amber'],
+                      ['Weights', inputs.weights, ''],
                       ['Border', '1.25" (2)', ''],
                       ['First & Last Flat', '3" (2)', ''],
                       ['Finish Width per Panel', results.fwpDisplay !== undefined ? results.fwpDisplay + '"' : 'N/A', ''],
