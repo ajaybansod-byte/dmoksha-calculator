@@ -57,7 +57,7 @@ try {
 
 const SHEET_HEADERS = [
   'Timestamp', 'Customer Name', 'Width (inches)', 'Height (inches)', 'Installation Date',
-  'Room', 'Panel Type', 'Main Fabric', 'Sheer Fabric', 'Lining Fabric',
+  'Room', 'Weights', 'Panel Type', 'Main Fabric', 'Sheer Fabric', 'Lining Fabric',
   'Stitching Style', 'Gather Style',
   'Number of Panels', 'Cut Length per Panel (inches)', 'Last Panel Width (inches)', 'Final Output',
   'User IP', 'Browser Info'
@@ -119,6 +119,7 @@ async function appendToGoogleSheet(data) {
       'Height (inches)': parseFloat(data.height || 0),
       'Installation Date': data.installationDate || '',
       'Room': data.room || '',
+      'Weights': data.weights || 'No',
       'Panel Type': data.panelType || '',
       'Main Fabric': data.mainFabric || 'No',
       'Sheer Fabric': data.sheerFabric || 'No',
